@@ -1,0 +1,24 @@
+name: Build
+
+on: [pull_request, push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3.5.0
+        with:
+          node-version: '20'
+      - uses: pnpm/action-setup@v2.2.4
+        with:
+          version: 8
+      - name: Install dependency
+        run: pnpm install
+      - name: Lint
+        run: pnpm lint
+      - name: Prettier
+        run: pnpm check
+      - name: Build
+        run: pnpm build
