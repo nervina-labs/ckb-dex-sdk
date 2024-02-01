@@ -90,6 +90,12 @@ export const leToU128 = (leHex: string): bigint => {
   return BigInt(beHex)
 }
 
+export const leToU32 = (leHex: string): number => {
+  const bytes = hexToBytes(append0x(leHex))
+  const beHex = `0x${bytes.reduceRight((pre, cur) => pre + cur.toString(16).padStart(2, '0'), '')}`
+  return parseInt(beHex, 16)
+}
+
 export const utf8ToHex = (text: string) => {
   let result = text.trim()
   if (result.startsWith('0x')) {

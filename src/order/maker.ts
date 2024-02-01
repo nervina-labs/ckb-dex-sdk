@@ -1,4 +1,5 @@
 import { addressToScript, blake160, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
+import { blockchain } from '@ckb-lumos/base'
 import { FEE, getDexLockScript, getCotaTypeScript, getXudtDep, getJoyIDCellDep } from '../constants'
 import { Hex, SubkeyUnlockReq, MakerParams } from '../types'
 import { append0x, remove0x, u128ToBe, u128ToLe } from '../utils'
@@ -8,23 +9,24 @@ import { calculateEmptyCellMinCapacity, calculateXudtCellCapacity } from './help
 export const buildMakerTx = async ({
   collector,
   joyID,
-  from,
+  seller,
   listAmount,
   totalValue,
   xudtType,
   fee,
 }: MakerParams): Promise<CKBComponents.RawTransaction> => {
   const txFee = fee ?? FEE
-  const isMainnet = from.startsWith('ckb')
-  const fromLock = addressToScript(from)
+  const isMainnet = seller.startsWith('ckb')
+  const sellerLock = addressToScript(seller)
+  const xudtTypeScript = blockchain.Script.unpack(xudtType) as CKBComponents.Script
 
   const emptyCells = await collector.getCells({
-    lock: fromLock,
+    lock: sellerLock,
   })
   if (!emptyCells || emptyCells.length === 0) {
     throw new NoLiveCellException('The address has no empty cells')
   }
-  const emptyCellCapacity = calculateEmptyCellMinCapacity(fromLock)
+  const emptyCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
   const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
     emptyCells,
     emptyCellCapacity,
@@ -32,8 +34,8 @@ export const buildMakerTx = async ({
   )
 
   const xudtCells = await collector.getCells({
-    lock: fromLock,
-    type: xudtType,
+    lock: sellerLock,
+    type: xudtTypeScript,
   })
   if (!xudtCells || xudtCells.length === 0) {
     throw new XudtException('The address has no xudt cells')
@@ -49,31 +51,31 @@ export const buildMakerTx = async ({
   const outputs: CKBComponents.CellOutput[] = []
   const outputsData: Hex[] = []
 
-  const dexLock: CKBComponents.Script = {
+  const orderLock: CKBComponents.Script = {
     ...getDexLockScript(isMainnet),
-    args: `0x${remove0x(serializeScript(fromLock))}00${u128ToBe(totalValue)}`,
+    args: `0x${remove0x(serializeScript(sellerLock))}00${u128ToBe(totalValue)}`,
   }
-  const dexCellCapacity = calculateXudtCellCapacity(dexLock, xudtType)
+  const orderCellCapacity = calculateXudtCellCapacity(orderLock, xudtTypeScript)
   outputs.push({
-    lock: dexLock,
-    type: xudtType,
-    capacity: append0x(dexCellCapacity.toString(16)),
+    lock: orderLock,
+    type: xudtTypeScript,
+    capacity: append0x(orderCellCapacity.toString(16)),
   })
   outputsData.push(append0x(u128ToLe(listAmount)))
 
-  let changeCapacity = emptyInputsCapacity + xudtInputsCapacity - dexCellCapacity - txFee
+  let changeCapacity = emptyInputsCapacity + xudtInputsCapacity - orderCellCapacity - txFee
   if (inputsAmount > listAmount) {
-    const xudtCellCapacity = calculateXudtCellCapacity(fromLock, xudtType)
+    const xudtCellCapacity = calculateXudtCellCapacity(sellerLock, xudtTypeScript)
     changeCapacity -= xudtCellCapacity
     outputs.push({
-      lock: fromLock,
-      type: xudtType,
+      lock: sellerLock,
+      type: xudtTypeScript,
       capacity: append0x(xudtCellCapacity.toString(16)),
     })
     outputsData.push(append0x(u128ToLe(inputsAmount - listAmount)))
   }
   outputs.push({
-    lock: fromLock,
+    lock: sellerLock,
     capacity: append0x(changeCapacity.toString(16)),
   })
   outputsData.push('0x')
@@ -88,7 +90,7 @@ export const buildMakerTx = async ({
   if (joyID && joyID.connectData.keyType === 'sub_key') {
     const pubkeyHash = append0x(blake160(append0x(joyID.connectData.pubkey), 'hex'))
     const req: SubkeyUnlockReq = {
-      lockScript: serializeScript(fromLock),
+      lockScript: serializeScript(sellerLock),
       pubkeyHash,
       algIndex: 1, // secp256r1
     }
@@ -101,7 +103,7 @@ export const buildMakerTx = async ({
     witnesses[0] = serializeWitnessArgs(emptyWitness)
 
     const cotaType = getCotaTypeScript(isMainnet)
-    const cotaCells = await collector.getCells({ lock: fromLock, type: cotaType })
+    const cotaCells = await collector.getCells({ lock: sellerLock, type: cotaType })
     if (!cotaCells || cotaCells.length === 0) {
       throw new NoCotaCellException("Cota cell doesn't exist")
     }

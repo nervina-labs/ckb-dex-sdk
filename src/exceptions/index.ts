@@ -33,3 +33,9 @@ export class NoCotaCellException extends Error {
     super(message)
   }
 }
+
+export class OrderLockArgsException extends Error {
+  constructor(message: string) {
+    super(message)
+  }
+}
