@@ -219,8 +219,6 @@ describe('dex test cases', () => {
   it('matchOrderOutputs', async () => {
     const { orderOutputs, orderOutputsData, sumOrderCapacity } = matchOrderOutputs(orderCells)
 
-    console.log(orderOutputs)
-
     const expectedOutputs = [
       {
         lock: {

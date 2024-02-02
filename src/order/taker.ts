@@ -13,7 +13,6 @@ export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
   let sumOrderCapacity = BigInt(0)
 
   for (const orderCell of orderCells) {
-    console.log(orderCell.output.lock.args)
     const orderArgs = OrderArgs.fromHex(orderCell.output.lock.args)
     sumOrderCapacity += orderArgs.totalValue
     const payCapacity = orderArgs.totalValue + BigInt(append0x(orderCell.output.capacity))
