@@ -38,6 +38,9 @@ dependencies:
   elliptic:
     specifier: ^6.5.4
     version: 6.5.4
+  fast-sha256:
+    specifier: ^1.3.0
+    version: 1.3.0
 
 devDependencies:
   '@types/crypto-js':
@@ -1707,6 +1710,10 @@ packages:
   /fast-levenshtein@2.0.6:
     resolution: { integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw== }
     dev: true
+
+  /fast-sha256@1.3.0:
+    resolution: { integrity: sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ== }
+    dev: false
 
   /fastq@1.17.0:
     resolution: { integrity: sha512-zGygtijUMT7jnk3h26kUms3BkSDp4IfIKjmnqI2tvx6nuBfiF1UqOxbnLfzdv+apBy+53oaImsKtMw/xYbW+1w== }

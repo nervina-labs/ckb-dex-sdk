@@ -17,7 +17,7 @@ export const buildMakerTx = async ({
   xudtType,
   fee,
 }: MakerParams): Promise<MakerResult> => {
-  const txFee = fee ?? MAX_FEE
+  let txFee = fee ?? MAX_FEE
   const isMainnet = seller.startsWith('ckb')
   const sellerLock = addressToScript(seller)
   const xudtTypeScript = blockchain.Script.unpack(xudtType) as CKBComponents.Script
@@ -127,6 +127,7 @@ export const buildMakerTx = async ({
   if (txFee === MAX_FEE) {
     const txSize = getTransactionSize(tx) + (joyID ? JOYID_ESTIMATED_WITNESS_LOCK_SIZE : 0)
     const estimatedTxFee = calculateTransactionFee(txSize)
+    txFee = estimatedTxFee
     const estimatedChangeCapacity = changeCapacity + (MAX_FEE - estimatedTxFee)
     tx.outputs[tx.outputs.length - 1].capacity = append0x(estimatedChangeCapacity.toString(16))
   }
