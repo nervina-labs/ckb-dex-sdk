@@ -23,6 +23,9 @@ dependencies:
   axios:
     specifier: ^1.6.7
     version: 1.6.7
+  bignumber.js:
+    specifier: ^9.1.1
+    version: 9.1.2
   bn.js:
     specifier: ^5.2.1
     version: 5.2.1
@@ -1199,6 +1202,11 @@ packages:
   /bech32@2.0.0:
     resolution:
       { integrity: sha512-LcknSilhIGatDAsY1ak2I8VtGaHNhgMSYVxFrGLXv+xLHytaKZKcaUJJUE7qmBr7h33o5YQwP55pMI0xmkpJwg== }
+    dev: false
+
+  /bignumber.js@9.1.2:
+    resolution:
+      { integrity: sha512-2/mKyZH9K85bzOEfhXDBFZTGd1CTs+5IHpeFQo9luiBG7hghdC851Pj2WAhb6E3R6b9tZj/XKhbg4fum+Kepug== }
     dev: false
 
   /blake2b-wasm@2.4.0:

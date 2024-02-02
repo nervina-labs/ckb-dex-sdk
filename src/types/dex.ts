@@ -1,4 +1,4 @@
-import { ConnectResponseData } from '@joyid/ckb'
+import { CKBTransaction, ConnectResponseData } from '@joyid/ckb'
 import { Aggregator } from '../aggregator'
 import { Collector } from '../collector'
 import { Address, Hex, U8 } from './common'
@@ -23,7 +23,32 @@ export interface MakerParams extends BaseParams {
   xudtType: Hex
 }
 
+export interface MakerResult {
+  rawTx: CKBTransaction
+  // The capacity(shannon) for packaging the order cell
+  listPackage: bigint
+  // Unit is shannon
+  txFee: bigint
+}
+
 export interface TakerParams extends BaseParams {
   orderOutPoints: Hex[]
   buyer: Address
+}
+
+export interface TakerResult {
+  rawTx: CKBTransaction
+  // Unit is shannon
+  txFee: bigint
+}
+
+export interface CancelParams extends BaseParams {
+  orderOutPoints: Hex[]
+  seller: Address
+}
+
+export interface CancelResult {
+  rawTx: CKBTransaction
+  // Unit is shannon
+  txFee: bigint
 }

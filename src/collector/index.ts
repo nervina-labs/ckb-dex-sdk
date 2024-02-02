@@ -123,7 +123,8 @@ export class Collector {
     }
   }
 
-  collectInputs(liveCells: IndexerCell[], needCapacity: bigint, fee: bigint): CollectResult {
+  collectInputs(liveCells: IndexerCell[], needCapacity: bigint, fee: bigint, minCapacity?: bigint): CollectResult {
+    const changeCapacity = minCapacity ?? MIN_CAPACITY
     let inputs: CKBComponents.CellInput[] = []
     let sum = BigInt(0)
     for (let cell of liveCells) {
@@ -135,14 +136,14 @@ export class Collector {
         since: '0x0',
       })
       sum = sum + BigInt(cell.output.capacity)
-      if (sum >= needCapacity + MIN_CAPACITY + fee) {
+      if (sum >= needCapacity + changeCapacity + fee) {
         break
       }
     }
     if (sum < needCapacity + fee) {
       throw new CapacityNotEnoughException('Capacity not enough')
     }
-    if (sum < needCapacity + MIN_CAPACITY + fee && sum != needCapacity + fee) {
+    if (sum < needCapacity + changeCapacity + fee && sum !== needCapacity + fee) {
       throw new CapacityNotEnoughException('Capacity not enough for change')
     }
     return { inputs, capacity: sum }

@@ -1,10 +1,24 @@
-import { addressToScript, blake160, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
+import {
+  addressToScript,
+  blake160,
+  getTransactionSize,
+  serializeScript,
+  serializeWitnessArgs,
+} from '@nervosnetwork/ckb-sdk-utils'
 import { blockchain } from '@ckb-lumos/base'
-import { FEE, getDexLockScript, getCotaTypeScript, getXudtDep, getJoyIDCellDep } from '../constants'
-import { Hex, SubkeyUnlockReq, MakerParams } from '../types'
+import {
+  getDexLockScript,
+  getCotaTypeScript,
+  getXudtDep,
+  getJoyIDCellDep,
+  MAX_FEE,
+  JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
+} from '../constants'
+import { Hex, SubkeyUnlockReq, MakerParams, MakerResult } from '../types'
 import { append0x, remove0x, u128ToBe, u128ToLe } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
-import { calculateEmptyCellMinCapacity, calculateXudtCellCapacity } from './helper'
+import { calculateEmptyCellMinCapacity, calculateTransactionFee, calculateXudtCellCapacity } from './helper'
+import { CKBTransaction } from '@joyid/ckb'
 
 export const buildMakerTx = async ({
   collector,
@@ -14,8 +28,8 @@ export const buildMakerTx = async ({
   totalValue,
   xudtType,
   fee,
-}: MakerParams): Promise<CKBComponents.RawTransaction> => {
-  const txFee = fee ?? FEE
+}: MakerParams): Promise<MakerResult> => {
+  const txFee = fee ?? MAX_FEE
   const isMainnet = seller.startsWith('ckb')
   const sellerLock = addressToScript(seller)
   const xudtTypeScript = blockchain.Script.unpack(xudtType) as CKBComponents.Script
@@ -26,11 +40,12 @@ export const buildMakerTx = async ({
   if (!emptyCells || emptyCells.length === 0) {
     throw new NoLiveCellException('The address has no empty cells')
   }
-  const emptyCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
+  const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
   const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
     emptyCells,
-    emptyCellCapacity,
+    minCellCapacity,
     txFee,
+    minCellCapacity,
   )
 
   const xudtCells = await collector.getCells({
@@ -114,7 +129,7 @@ export const buildMakerTx = async ({
     }
     cellDeps = [cotaCellDep, ...cellDeps]
   }
-  const rawTx: CKBComponents.RawTransaction = {
+  const tx: CKBComponents.RawTransaction = {
     version: '0x0',
     cellDeps,
     headerDeps: [],
@@ -124,5 +139,16 @@ export const buildMakerTx = async ({
     witnesses,
   }
 
-  return rawTx
+  let txSize = getTransactionSize(tx)
+  if (joyID) {
+    txSize += JOYID_ESTIMATED_WITNESS_LOCK_SIZE
+  }
+
+  if (txFee === MAX_FEE) {
+    const estimatedTxFee = calculateTransactionFee(txSize)
+    const estimatedChangeCapacity = changeCapacity + (MAX_FEE - estimatedTxFee)
+    tx.outputs[tx.outputs.length - 1].capacity = append0x(estimatedChangeCapacity.toString(16))
+  }
+
+  return { rawTx: tx as CKBTransaction, txFee, listPackage: orderCellCapacity }
 }

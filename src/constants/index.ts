@@ -1,8 +1,10 @@
-export const FEE = BigInt(2500)
+export const CKB_UNIT = BigInt(10000_0000)
+export const MAX_FEE = BigInt(2000_0000)
 export const MIN_CAPACITY = BigInt(63) * BigInt(10000_0000)
 export const WITNESS_NATIVE_MODE = '01'
 export const WITNESS_SUBKEY_MODE = '02'
 export const SECP256R1_PUBKEY_SIG_LEN = (1 + 64 + 64) * 2
+export const JOYID_ESTIMATED_WITNESS_LOCK_SIZE = 129 + 1000
 
 const TestnetInfo = {
   JoyIDLockScript: {

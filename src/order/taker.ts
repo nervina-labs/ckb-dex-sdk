@@ -1,11 +1,25 @@
-import { addressToScript, blake160, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
-import { FEE, getCotaTypeScript, getXudtDep, getJoyIDCellDep, getDexCellDep } from '../constants'
-import { Hex, SubkeyUnlockReq, TakerParams } from '../types'
+import {
+  addressToScript,
+  blake160,
+  getTransactionSize,
+  serializeScript,
+  serializeWitnessArgs,
+} from '@nervosnetwork/ckb-sdk-utils'
+import {
+  getCotaTypeScript,
+  getXudtDep,
+  getJoyIDCellDep,
+  getDexCellDep,
+  MAX_FEE,
+  JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
+} from '../constants'
+import { Hex, SubkeyUnlockReq, TakerParams, TakerResult } from '../types'
 import { append0x, leToU128, u128ToLe } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
-import { calculateXudtCellCapacity } from './helper'
+import { calculateEmptyCellMinCapacity, calculateTransactionFee, calculateXudtCellCapacity } from './helper'
 import { blockchain } from '@ckb-lumos/base'
 import { OrderArgs } from './orderArgs'
+import { CKBTransaction } from '@joyid/ckb'
 
 export const cleanUpXudtOutputs = (orderCells: CKBComponents.LiveCell[], buyerLock: CKBComponents.Script) => {
   const orderXudtTypes = new Set(orderCells.map(cell => cell.output.type))
@@ -54,8 +68,8 @@ export const buildTakerTx = async ({
   buyer,
   orderOutPoints,
   fee,
-}: TakerParams): Promise<CKBComponents.RawTransaction> => {
-  const txFee = fee ?? FEE
+}: TakerParams): Promise<TakerResult> => {
+  const txFee = fee ?? MAX_FEE
   const isMainnet = buyer.startsWith('ckb')
   const buyerLock = addressToScript(buyer)
 
@@ -92,10 +106,12 @@ export const buildTakerTx = async ({
   const outputs = [...orderOutputs, ...xudtOutputs]
   const outputsData = [...orderOutputsData, ...xudtOutputsData]
 
+  const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
   const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
     emptyCells,
     needInputsCapacity,
     txFee,
+    minCellCapacity,
   )
   const orderInputs: CKBComponents.CellInput[] = outPoints.map(outPoint => ({
     previousOutput: outPoint,
@@ -103,14 +119,13 @@ export const buildTakerTx = async ({
   }))
   const inputs = [...orderInputs, ...emptyInputs]
 
-  if (inputsCapacity !== needInputsCapacity + txFee) {
-    const changeOutput: CKBComponents.CellOutput = {
-      lock: buyerLock,
-      capacity: append0x((inputsCapacity - needInputsCapacity - txFee).toString(16)),
-    }
-    outputs.push(changeOutput)
-    outputsData.push('0x')
+  const changeCapacity = inputsCapacity - needInputsCapacity - txFee
+  const changeOutput: CKBComponents.CellOutput = {
+    lock: buyerLock,
+    capacity: append0x(changeCapacity.toString(16)),
   }
+  outputs.push(changeOutput)
+  outputsData.push('0x')
 
   let cellDeps: CKBComponents.CellDep[] = [getXudtDep(isMainnet), getDexCellDep(isMainnet)]
   if (joyID) {
@@ -153,7 +168,7 @@ export const buildTakerTx = async ({
     }
     cellDeps = [cotaCellDep, ...cellDeps]
   }
-  const rawTx: CKBComponents.RawTransaction = {
+  const tx: CKBComponents.RawTransaction = {
     version: '0x0',
     cellDeps,
     headerDeps: [],
@@ -163,5 +178,16 @@ export const buildTakerTx = async ({
     witnesses,
   }
 
-  return rawTx
+  let txSize = getTransactionSize(tx)
+  if (joyID) {
+    txSize += JOYID_ESTIMATED_WITNESS_LOCK_SIZE
+  }
+
+  if (txFee === MAX_FEE) {
+    const estimatedTxFee = calculateTransactionFee(txSize)
+    const estimatedChangeCapacity = changeCapacity + (MAX_FEE - estimatedTxFee)
+    tx.outputs[tx.outputs.length - 1].capacity = append0x(estimatedChangeCapacity.toString(16))
+  }
+
+  return { rawTx: tx as CKBTransaction, txFee }
 }
