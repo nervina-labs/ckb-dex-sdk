@@ -19,13 +19,7 @@ export class Collector {
     return new CKB(this.ckbNodeUrl)
   }
 
-  async getCells({
-    lock,
-    type,
-  }: {
-    lock?: CKBComponents.Script
-    type?: CKBComponents.Script
-  }): Promise<IndexerCell[] | undefined> {
+  async getCells({ lock, type }: { lock?: CKBComponents.Script; type?: CKBComponents.Script }): Promise<IndexerCell[] | undefined> {
     let param: any
     if (lock) {
       const filter = type

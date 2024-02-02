@@ -1,24 +1,23 @@
 import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
 import { getCotaTypeScript, getXudtDep, getJoyIDCellDep, getDexCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE } from '../constants'
-import { Hex, SubkeyUnlockReq, TakerParams, TakerResult } from '../types'
+import { CancelParams, Hex, SubkeyUnlockReq, TakerResult } from '../types'
 import { append0x, leToU128, u128ToLe } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
 import { calculateEmptyCellMinCapacity, calculateTransactionFee, calculateXudtCellCapacity, deserializeOutPoints } from './helper'
-import { OrderArgs } from './orderArgs'
 import { CKBTransaction } from '@joyid/ckb'
 
-export const cleanUpXudtOutputs = (orderCells: CKBComponents.LiveCell[], buyerLock: CKBComponents.Script) => {
+export const cleanUpXudtOutputs = (orderCells: CKBComponents.LiveCell[], sellerLock: CKBComponents.Script) => {
   const orderXudtTypes = new Set(orderCells.map(cell => cell.output.type))
   const xudtOutputs: CKBComponents.CellOutput[] = []
   const xudtOutputsData: Hex[] = []
   let sumXudtCapacity = BigInt(0)
 
   for (const orderXudtType of orderXudtTypes) {
-    sumXudtCapacity += calculateXudtCellCapacity(buyerLock, orderXudtType!)
+    sumXudtCapacity += calculateXudtCellCapacity(sellerLock, orderXudtType!)
     xudtOutputs.push({
-      lock: buyerLock,
+      lock: sellerLock,
       type: orderXudtType,
-      capacity: append0x(calculateXudtCellCapacity(buyerLock, orderXudtType!).toString(16)),
+      capacity: append0x(calculateXudtCellCapacity(sellerLock, orderXudtType!).toString(16)),
     })
     const xudtAmount = orderCells
       .filter(cell => cell.output.type === orderXudtType)
@@ -29,68 +28,51 @@ export const cleanUpXudtOutputs = (orderCells: CKBComponents.LiveCell[], buyerLo
   return { xudtOutputs, xudtOutputsData, sumXudtCapacity }
 }
 
-export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
-  const orderOutputs: CKBComponents.CellOutput[] = []
-  const orderOutputsData: Hex[] = []
-  let sumOrderCapacity = BigInt(0)
-
-  for (const orderCell of orderCells) {
-    const orderArgs = OrderArgs.fromHex(orderCell.output.lock.args)
-    sumOrderCapacity += orderArgs.totalValue
-    const payCapacity = orderArgs.totalValue + BigInt(append0x(orderCell.output.capacity))
-    const output: CKBComponents.CellOutput = {
-      lock: orderArgs.ownerLock,
-      capacity: append0x(payCapacity.toString(16)),
-    }
-    orderOutputs.push(output)
-    orderOutputsData.push('0x')
-  }
-  return { orderOutputs, orderOutputsData, sumOrderCapacity }
-}
-
-export const buildTakerTx = async ({ collector, joyID, buyer, orderOutPoints, fee }: TakerParams): Promise<TakerResult> => {
+export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, fee }: CancelParams): Promise<TakerResult> => {
   const txFee = fee ?? MAX_FEE
-  const isMainnet = buyer.startsWith('ckb')
-  const buyerLock = addressToScript(buyer)
+  const isMainnet = seller.startsWith('ckb')
+  const sellerLock = addressToScript(seller)
 
   const emptyCells = await collector.getCells({
-    lock: buyerLock,
+    lock: sellerLock,
   })
   if (!emptyCells || emptyCells.length === 0) {
     throw new NoLiveCellException('The address has no empty cells')
   }
 
-  // Deserialize outPointHex array to outPoint array
   const outPoints = deserializeOutPoints(orderOutPoints)
 
+  let orderInputsCapacity = BigInt(0)
   // Fetch xudt order cells with outPoints
   const orderCells: CKBComponents.LiveCell[] = []
   for await (const outPoint of outPoints) {
     const cell = await collector.getLiveCell(outPoint)
+    if (cell.output.lock !== sellerLock) {
+      throw new XudtException('The xudt cell does not belong to the seller address')
+    }
     if (!cell.output.type || !cell.data) {
       throw new XudtException('Xudt cell must have type script')
     }
+    orderInputsCapacity += BigInt(cell.output.capacity)
     orderCells.push(cell)
   }
 
-  const { orderOutputs, orderOutputsData, sumOrderCapacity } = matchOrderOutputs(orderCells)
-  const { xudtOutputs, xudtOutputsData, sumXudtCapacity } = cleanUpXudtOutputs(orderCells, buyerLock)
+  const { xudtOutputs, xudtOutputsData, sumXudtCapacity } = cleanUpXudtOutputs(orderCells, sellerLock)
 
-  const needInputsCapacity = sumOrderCapacity + sumXudtCapacity
-  const outputs = [...orderOutputs, ...xudtOutputs]
-  const outputsData = [...orderOutputsData, ...xudtOutputsData]
+  const outputs = xudtOutputs
+  const outputsData = xudtOutputsData
 
-  const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
-  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(emptyCells, needInputsCapacity, txFee, minCellCapacity)
+  const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
+  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(emptyCells, minCellCapacity, txFee, minCellCapacity)
   const orderInputs: CKBComponents.CellInput[] = outPoints.map(outPoint => ({
     previousOutput: outPoint,
     since: '0x0',
   }))
-  const inputs = [...orderInputs, ...emptyInputs]
+  const inputs = [...emptyInputs, ...orderInputs]
 
-  const changeCapacity = inputsCapacity - needInputsCapacity - txFee
+  const changeCapacity = inputsCapacity + orderInputsCapacity - sumXudtCapacity - txFee
   const changeOutput: CKBComponents.CellOutput = {
-    lock: buyerLock,
+    lock: sellerLock,
     capacity: append0x(changeCapacity.toString(16)),
   }
   outputs.push(changeOutput)
@@ -102,11 +84,11 @@ export const buildTakerTx = async ({ collector, joyID, buyer, orderOutPoints, fe
   }
 
   const emptyWitness = { lock: '', inputType: '', outputType: '' }
-  const witnesses = inputs.map((_, index) => (index === orderInputs.length ? serializeWitnessArgs(emptyWitness) : '0x'))
+  const witnesses = inputs.map((_, index) => (index === 0 ? serializeWitnessArgs(emptyWitness) : '0x'))
   if (joyID && joyID.connectData.keyType === 'sub_key') {
     const pubkeyHash = append0x(blake160(append0x(joyID.connectData.pubkey), 'hex'))
     const req: SubkeyUnlockReq = {
-      lockScript: serializeScript(buyerLock),
+      lockScript: serializeScript(sellerLock),
       pubkeyHash,
       algIndex: 1, // secp256r1
     }
@@ -116,10 +98,10 @@ export const buildTakerTx = async ({ collector, joyID, buyer, orderOutPoints, fe
       inputType: '',
       outputType: append0x(unlockEntry),
     }
-    witnesses[orderInputs.length] = serializeWitnessArgs(emptyWitness)
+    witnesses[0] = serializeWitnessArgs(emptyWitness)
 
     const cotaType = getCotaTypeScript(isMainnet)
-    const cotaCells = await collector.getCells({ lock: buyerLock, type: cotaType })
+    const cotaCells = await collector.getCells({ lock: sellerLock, type: cotaType })
     if (!cotaCells || cotaCells.length === 0) {
       throw new NoCotaCellException("Cota cell doesn't exist")
     }

@@ -122,18 +122,14 @@ const MainnetInfo = {
   } as CKBComponents.CellDep,
 }
 
-export const getJoyIDLockScript = (isMainnet = false) =>
-  isMainnet ? MainnetInfo.JoyIDLockScript : TestnetInfo.JoyIDLockScript
+export const getJoyIDLockScript = (isMainnet = false) => (isMainnet ? MainnetInfo.JoyIDLockScript : TestnetInfo.JoyIDLockScript)
 export const getJoyIDCellDep = (isMainnet = false) => (isMainnet ? MainnetInfo.JoyIDLockDep : TestnetInfo.JoyIDLockDep)
 
-export const getCotaTypeScript = (isMainnet = false) =>
-  isMainnet ? MainnetInfo.CotaTypeScript : TestnetInfo.CotaTypeScript
+export const getCotaTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.CotaTypeScript : TestnetInfo.CotaTypeScript)
 export const getCotaCellDep = (isMainnet = false) => (isMainnet ? MainnetInfo.CotaTypeDep : TestnetInfo.CotaTypeDep)
 
-export const getDexLockScript = (isMainnet = false) =>
-  isMainnet ? MainnetInfo.DexLockScript : TestnetInfo.DexLockScript
+export const getDexLockScript = (isMainnet = false) => (isMainnet ? MainnetInfo.DexLockScript : TestnetInfo.DexLockScript)
 export const getDexCellDep = (isMainnet = false) => (isMainnet ? MainnetInfo.DexLockDep : TestnetInfo.DexLockDep)
 
-export const getXudtTypeScript = (isMainnet = false) =>
-  isMainnet ? MainnetInfo.XUDTTypeScript : TestnetInfo.XUDTTypeScript
+export const getXudtTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.XUDTTypeScript : TestnetInfo.XUDTTypeScript)
 export const getXudtDep = (isMainnet = false) => (isMainnet ? MainnetInfo.XUDTTypeDep : TestnetInfo.XUDTTypeDep)

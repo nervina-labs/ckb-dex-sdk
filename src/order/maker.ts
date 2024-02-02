@@ -1,19 +1,6 @@
-import {
-  addressToScript,
-  blake160,
-  getTransactionSize,
-  serializeScript,
-  serializeWitnessArgs,
-} from '@nervosnetwork/ckb-sdk-utils'
+import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
 import { blockchain } from '@ckb-lumos/base'
-import {
-  getDexLockScript,
-  getCotaTypeScript,
-  getXudtDep,
-  getJoyIDCellDep,
-  MAX_FEE,
-  JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
-} from '../constants'
+import { getDexLockScript, getCotaTypeScript, getXudtDep, getJoyIDCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE } from '../constants'
 import { Hex, SubkeyUnlockReq, MakerParams, MakerResult } from '../types'
 import { append0x, remove0x, u128ToBe, u128ToLe } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
@@ -55,11 +42,7 @@ export const buildMakerTx = async ({
   if (!xudtCells || xudtCells.length === 0) {
     throw new XudtException('The address has no xudt cells')
   }
-  let {
-    inputs,
-    capacity: xudtInputsCapacity,
-    amount: inputsAmount,
-  } = collector.collectXudtInputs(xudtCells, listAmount)
+  let { inputs, capacity: xudtInputsCapacity, amount: inputsAmount } = collector.collectXudtInputs(xudtCells, listAmount)
   inputs = [...emptyInputs, ...inputs]
 
   // build dex and other outputs and outputsData
@@ -139,12 +122,8 @@ export const buildMakerTx = async ({
     witnesses,
   }
 
-  let txSize = getTransactionSize(tx)
-  if (joyID) {
-    txSize += JOYID_ESTIMATED_WITNESS_LOCK_SIZE
-  }
-
   if (txFee === MAX_FEE) {
+    const txSize = getTransactionSize(tx) + (joyID ? JOYID_ESTIMATED_WITNESS_LOCK_SIZE : 0)
     const estimatedTxFee = calculateTransactionFee(txSize)
     const estimatedChangeCapacity = changeCapacity + (MAX_FEE - estimatedTxFee)
     tx.outputs[tx.outputs.length - 1].capacity = append0x(estimatedChangeCapacity.toString(16))
