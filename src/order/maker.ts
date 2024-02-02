@@ -6,6 +6,7 @@ import { append0x, remove0x, u128ToBe, u128ToLe } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
 import { calculateEmptyCellMinCapacity, calculateTransactionFee, calculateXudtCellCapacity } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
+import { OrderArgs } from './orderArgs'
 
 export const buildMakerTx = async ({
   collector,
@@ -49,9 +50,10 @@ export const buildMakerTx = async ({
   const outputs: CKBComponents.CellOutput[] = []
   const outputsData: Hex[] = []
 
+  const orderArgs = new OrderArgs(sellerLock, 0, totalValue)
   const orderLock: CKBComponents.Script = {
     ...getDexLockScript(isMainnet),
-    args: `0x${remove0x(serializeScript(sellerLock))}00${u128ToBe(totalValue)}`,
+    args: orderArgs.toHex(),
   }
   const orderCellCapacity = calculateXudtCellCapacity(orderLock, xudtTypeScript)
   outputs.push({

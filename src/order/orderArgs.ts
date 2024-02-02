@@ -1,7 +1,7 @@
 import { blockchain } from '@ckb-lumos/base'
 import { OrderLockArgsException } from '../exceptions'
 import { Hex } from '../types'
-import { beToU128, leToU32, remove0x, u128ToBe, u8ToHex } from '../utils'
+import { append0x, beToU128, leToU32, remove0x, u128ToBe, u8ToHex } from '../utils'
 import { serializeScript } from '@nervosnetwork/ckb-sdk-utils'
 
 export class OrderArgs {
@@ -23,7 +23,7 @@ export class OrderArgs {
     }
 
     const ownerLockHexLen = leToU32(data.substring(0, 8)) * 2
-    const ownerLock = blockchain.Script.unpack(data.substring(0, ownerLockHexLen)) as CKBComponents.Script
+    const ownerLock = blockchain.Script.unpack(append0x(data.substring(0, ownerLockHexLen))) as CKBComponents.Script
 
     if (data.length < ownerLockHexLen + 34) {
       throw new OrderLockArgsException('The length of dex lock args is invalid')

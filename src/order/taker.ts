@@ -1,33 +1,11 @@
 import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
 import { getCotaTypeScript, getXudtDep, getJoyIDCellDep, getDexCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE } from '../constants'
 import { Hex, SubkeyUnlockReq, TakerParams, TakerResult } from '../types'
-import { append0x, leToU128, u128ToLe } from '../utils'
+import { append0x } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
-import { calculateEmptyCellMinCapacity, calculateTransactionFee, calculateXudtCellCapacity, deserializeOutPoints } from './helper'
+import { calculateEmptyCellMinCapacity, calculateTransactionFee, deserializeOutPoints, cleanUpXudtOutputs } from './helper'
 import { OrderArgs } from './orderArgs'
 import { CKBTransaction } from '@joyid/ckb'
-
-export const cleanUpXudtOutputs = (orderCells: CKBComponents.LiveCell[], buyerLock: CKBComponents.Script) => {
-  const orderXudtTypes = new Set(orderCells.map(cell => cell.output.type))
-  const xudtOutputs: CKBComponents.CellOutput[] = []
-  const xudtOutputsData: Hex[] = []
-  let sumXudtCapacity = BigInt(0)
-
-  for (const orderXudtType of orderXudtTypes) {
-    sumXudtCapacity += calculateXudtCellCapacity(buyerLock, orderXudtType!)
-    xudtOutputs.push({
-      lock: buyerLock,
-      type: orderXudtType,
-      capacity: append0x(calculateXudtCellCapacity(buyerLock, orderXudtType!).toString(16)),
-    })
-    const xudtAmount = orderCells
-      .filter(cell => cell.output.type === orderXudtType)
-      .map(cell => leToU128(cell.data?.content!))
-      .reduce((prev, current) => prev + current, BigInt(0))
-    xudtOutputsData.push(append0x(u128ToLe(xudtAmount)))
-  }
-  return { xudtOutputs, xudtOutputsData, sumXudtCapacity }
-}
 
 export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
   const orderOutputs: CKBComponents.CellOutput[] = []
@@ -35,6 +13,7 @@ export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
   let sumOrderCapacity = BigInt(0)
 
   for (const orderCell of orderCells) {
+    console.log(orderCell.output.lock.args)
     const orderArgs = OrderArgs.fromHex(orderCell.output.lock.args)
     sumOrderCapacity += orderArgs.totalValue
     const payCapacity = orderArgs.totalValue + BigInt(append0x(orderCell.output.capacity))

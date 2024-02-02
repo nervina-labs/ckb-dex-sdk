@@ -1,32 +1,10 @@
 import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
 import { getCotaTypeScript, getXudtDep, getJoyIDCellDep, getDexCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE } from '../constants'
-import { CancelParams, Hex, SubkeyUnlockReq, TakerResult } from '../types'
-import { append0x, leToU128, u128ToLe } from '../utils'
+import { CancelParams, SubkeyUnlockReq, TakerResult } from '../types'
+import { append0x } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
-import { calculateEmptyCellMinCapacity, calculateTransactionFee, calculateXudtCellCapacity, deserializeOutPoints } from './helper'
+import { calculateEmptyCellMinCapacity, calculateTransactionFee, cleanUpXudtOutputs, deserializeOutPoints } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
-
-export const cleanUpXudtOutputs = (orderCells: CKBComponents.LiveCell[], sellerLock: CKBComponents.Script) => {
-  const orderXudtTypes = new Set(orderCells.map(cell => cell.output.type))
-  const xudtOutputs: CKBComponents.CellOutput[] = []
-  const xudtOutputsData: Hex[] = []
-  let sumXudtCapacity = BigInt(0)
-
-  for (const orderXudtType of orderXudtTypes) {
-    sumXudtCapacity += calculateXudtCellCapacity(sellerLock, orderXudtType!)
-    xudtOutputs.push({
-      lock: sellerLock,
-      type: orderXudtType,
-      capacity: append0x(calculateXudtCellCapacity(sellerLock, orderXudtType!).toString(16)),
-    })
-    const xudtAmount = orderCells
-      .filter(cell => cell.output.type === orderXudtType)
-      .map(cell => leToU128(cell.data?.content!))
-      .reduce((prev, current) => prev + current, BigInt(0))
-    xudtOutputsData.push(append0x(u128ToLe(xudtAmount)))
-  }
-  return { xudtOutputs, xudtOutputsData, sumXudtCapacity }
-}
 
 export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, fee }: CancelParams): Promise<TakerResult> => {
   const txFee = fee ?? MAX_FEE

@@ -22,3 +22,5 @@ jobs:
         run: pnpm check
       - name: Build
         run: pnpm build
+      - name: Test
+        run: pnpm test
