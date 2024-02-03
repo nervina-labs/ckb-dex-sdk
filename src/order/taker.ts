@@ -125,5 +125,5 @@ export const buildTakerTx = async ({ collector, joyID, buyer, orderOutPoints, fe
     tx.outputs[tx.outputs.length - 1].capacity = append0x(estimatedChangeCapacity.toString(16))
   }
 
-  return { rawTx: tx as CKBTransaction, txFee }
+  return { rawTx: tx as CKBTransaction, txFee, witnessIndex: orderInputs.length }
 }

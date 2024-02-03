@@ -2,7 +2,7 @@ import { addressToScript, blake160, getTransactionSize, serializeScript, seriali
 import { blockchain } from '@ckb-lumos/base'
 import { getDexLockScript, getCotaTypeScript, getXudtDep, getJoyIDCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE } from '../constants'
 import { Hex, SubkeyUnlockReq, MakerParams, MakerResult } from '../types'
-import { append0x, remove0x, u128ToBe, u128ToLe } from '../utils'
+import { append0x, u128ToLe } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
 import { calculateEmptyCellMinCapacity, calculateTransactionFee, calculateXudtCellCapacity } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
@@ -132,5 +132,5 @@ export const buildMakerTx = async ({
     tx.outputs[tx.outputs.length - 1].capacity = append0x(estimatedChangeCapacity.toString(16))
   }
 
-  return { rawTx: tx as CKBTransaction, txFee, listPackage: orderCellCapacity }
+  return { rawTx: tx as CKBTransaction, txFee, listPackage: orderCellCapacity, witnessIndex: 0 }
 }

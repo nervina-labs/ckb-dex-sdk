@@ -5,6 +5,7 @@ import { append0x } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
 import { calculateEmptyCellMinCapacity, calculateTransactionFee, cleanUpXudtOutputs, deserializeOutPoints } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
+import { OrderArgs } from './orderArgs'
 
 export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, fee }: CancelParams): Promise<TakerResult> => {
   const txFee = fee ?? MAX_FEE
@@ -25,7 +26,8 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
   const orderCells: CKBComponents.LiveCell[] = []
   for await (const outPoint of outPoints) {
     const cell = await collector.getLiveCell(outPoint)
-    if (cell.output.lock !== sellerLock) {
+    const orderArgs = OrderArgs.fromHex(cell.output.lock.args)
+    if (serializeScript(orderArgs.ownerLock) !== serializeScript(sellerLock)) {
       throw new XudtException('The xudt cell does not belong to the seller address')
     }
     if (!cell.output.type || !cell.data) {
@@ -46,7 +48,7 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
     previousOutput: outPoint,
     since: '0x0',
   }))
-  const inputs = [...emptyInputs, ...orderInputs]
+  const inputs = [...orderInputs, ...emptyInputs]
 
   const changeCapacity = inputsCapacity + orderInputsCapacity - sumXudtCapacity - txFee
   const changeOutput: CKBComponents.CellOutput = {
@@ -62,7 +64,7 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
   }
 
   const emptyWitness = { lock: '', inputType: '', outputType: '' }
-  const witnesses = inputs.map((_, index) => (index === 0 ? serializeWitnessArgs(emptyWitness) : '0x'))
+  const witnesses = inputs.map((_, index) => (index === orderInputs.length ? serializeWitnessArgs(emptyWitness) : '0x'))
   if (joyID && joyID.connectData.keyType === 'sub_key') {
     const pubkeyHash = append0x(blake160(append0x(joyID.connectData.pubkey), 'hex'))
     const req: SubkeyUnlockReq = {
@@ -76,7 +78,7 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
       inputType: '',
       outputType: append0x(unlockEntry),
     }
-    witnesses[0] = serializeWitnessArgs(emptyWitness)
+    witnesses[orderInputs.length] = serializeWitnessArgs(emptyWitness)
 
     const cotaType = getCotaTypeScript(isMainnet)
     const cotaCells = await collector.getCells({ lock: sellerLock, type: cotaType })
@@ -107,5 +109,5 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
     tx.outputs[tx.outputs.length - 1].capacity = append0x(estimatedChangeCapacity.toString(16))
   }
 
-  return { rawTx: tx as CKBTransaction, txFee }
+  return { rawTx: tx as CKBTransaction, txFee, witnessIndex: orderInputs.length }
 }

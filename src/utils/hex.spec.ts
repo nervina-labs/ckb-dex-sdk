@@ -31,4 +31,14 @@ describe('number to little endian', () => {
     const expected = leToU128('0x00b864d9450000000000000000000000')
     expect(BigInt(3000_0000_0000)).toBe(expected)
   })
+
+  it('leToU128', async () => {
+    const expected = leToU128('0x00e87648170000000000000000000000')
+    expect(BigInt(1000_0000_0000)).toBe(expected)
+  })
+
+  it('leToU128', async () => {
+    const expected = leToU128('0x00205fa0120000000000000000000000')
+    expect(BigInt(800_0000_0000)).toBe(expected)
+  })
 })

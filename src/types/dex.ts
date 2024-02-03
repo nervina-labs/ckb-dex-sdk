@@ -29,6 +29,8 @@ export interface MakerResult {
   listPackage: bigint
   // Unit is shannon
   txFee: bigint
+  // The position of WitnessArgs in witnesses for lock script to sign transaction
+  witnessIndex?: number
 }
 
 export interface TakerParams extends BaseParams {
@@ -40,6 +42,8 @@ export interface TakerResult {
   rawTx: CKBTransaction
   // Unit is shannon
   txFee: bigint
+  // The position of WitnessArgs in witnesses for lock script to sign transaction
+  witnessIndex?: number
 }
 
 export interface CancelParams extends BaseParams {
@@ -51,4 +55,6 @@ export interface CancelResult {
   rawTx: CKBTransaction
   // Unit is shannon
   txFee: bigint
+  // The position of WitnessArgs in witnesses for lock script to sign transaction
+  witnessIndex?: number
 }
