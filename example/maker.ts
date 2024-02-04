@@ -17,7 +17,8 @@ const maker = async () => {
   })
   const seller = addressFromP256PrivateKey(SELLER_MAIN_PRIVATE_KEY)
   // ckt1qrfrwcdnvssswdwpn3s9v8fp87emat306ctjwsm3nmlkjg8qyza2cqgqq98mx5lm42zd7mwyq54pg49cln850mj2957np7az
-  console.log('buyer address: ', seller)
+  // ckt1qrfrwcdnvssswdwpn3s9v8fp87emat306ctjwsm3nmlkjg8qyza2cqgqqxqyukftmpfang0z2ks6w6syjutass94fujlf09a
+  console.log('seller address: ', seller)
 
   const aggregator = new Aggregator('https://cota.nervina.dev/aggregator')
   // The connectData is the response of the connect with @joyid/ckb
@@ -35,8 +36,8 @@ const maker = async () => {
     connectData,
   }
 
-  const listAmount = BigInt(200_0000_0000)
-  const totalValue = BigInt(1000_0000_0000)
+  const listAmount = BigInt(500_0000_0000)
+  const totalValue = BigInt(800_0000_0000)
   const xudtType: CKBComponents.Script = {
     codeHash: '0x25c29dc317811a6f6f3985a7a9ebc4838bd388d19d0feeecf0bcd60f6c0975bb',
     hashType: 'type',

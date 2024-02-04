@@ -17,7 +17,7 @@ const taker = async () => {
   })
   const buyer = addressFromP256PrivateKey(BUYER_MAIN_PRIVATE_KEY)
   // ckt1qrfrwcdnvssswdwpn3s9v8fp87emat306ctjwsm3nmlkjg8qyza2cqgqq9kxr7vy7yknezj0vj0xptx6thk6pwyr0sxamv6q
-  console.log('seller address: ', buyer)
+  console.log('buyer address: ', buyer)
 
   const aggregator = new Aggregator('https://cota.nervina.dev/aggregator')
   // The connectData is the response of the connect with @joyid/ckb
@@ -37,7 +37,15 @@ const taker = async () => {
 
   const orderOutPoints: CKBComponents.OutPoint[] = [
     {
-      txHash: '0x0ae73a28497a26e839216d1c5b87ea93b08b57308fb774bdb908e510bd773d1c',
+      txHash: '0xa0e395792cbd70d071fe7256c4206daaa35fe6e6733d772c8af716677705691b',
+      index: '0x0',
+    },
+    {
+      txHash: '0x367fe70ddaef9d89a120a9fc2297c5861640210736138693087b20f625edeed6',
+      index: '0x0',
+    },
+    {
+      txHash: '0x882e62e0c40cbd411d2c0eda7cdc4d793cd7bc33012b9ad7b3a2db34abce483f',
       index: '0x0',
     },
   ]
@@ -51,6 +59,8 @@ const taker = async () => {
 
   const key = keyFromP256Private(BUYER_MAIN_PRIVATE_KEY)
   const signedTx = signSecp256r1Tx(key, rawTx, witnessIndex)
+
+  console.log(JSON.stringify(signedTx))
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
   console.info(`The taker of xudt asset has been finished with tx hash: ${txHash}`)

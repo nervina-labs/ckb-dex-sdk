@@ -37,7 +37,11 @@ const cancel = async () => {
 
   const orderOutPoints: CKBComponents.OutPoint[] = [
     {
-      txHash: '0xb08d31105aa5766f3e4cc27a3bc36d05401f33e81179f5714c5b4e691ac3fde8',
+      txHash: '0x835a283e8371c1e55db27e0e09bf468175b047268ca82609e74ef6ee9e81403c',
+      index: '0x0',
+    },
+    {
+      txHash: '0x48d64acadc78709ac2de78c88ec3cd015c5d1cb02a0afa986d408b30e82a2eb6',
       index: '0x0',
     },
   ]
