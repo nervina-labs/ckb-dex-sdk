@@ -8,7 +8,7 @@ import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
 
 export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, fee }: CancelParams): Promise<TakerResult> => {
-  const txFee = fee ?? MAX_FEE
+  let txFee = fee ?? MAX_FEE
   const isMainnet = seller.startsWith('ckb')
   const sellerLock = addressToScript(seller)
 
@@ -105,6 +105,7 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
   if (txFee === MAX_FEE) {
     const txSize = getTransactionSize(tx) + (joyID ? JOYID_ESTIMATED_WITNESS_LOCK_SIZE : 0)
     const estimatedTxFee = calculateTransactionFee(txSize)
+    txFee = estimatedTxFee
     const estimatedChangeCapacity = changeCapacity + (MAX_FEE - estimatedTxFee)
     tx.outputs[tx.outputs.length - 1].capacity = append0x(estimatedChangeCapacity.toString(16))
   }
