@@ -28,10 +28,17 @@ export const buildMakerTx = async ({
   if (!emptyCells || emptyCells.length === 0) {
     throw new NoLiveCellException('The address has no empty cells')
   }
+  const orderArgs = new OrderArgs(sellerLock, 0, totalValue)
+  const orderLock: CKBComponents.Script = {
+    ...getDexLockScript(isMainnet),
+    args: orderArgs.toHex(),
+  }
+  const orderCellCapacity = calculateXudtCellCapacity(orderLock, xudtTypeScript)
+
   const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
   const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
     emptyCells,
-    minCellCapacity,
+    orderCellCapacity,
     txFee,
     minCellCapacity,
   )
@@ -50,12 +57,6 @@ export const buildMakerTx = async ({
   const outputs: CKBComponents.CellOutput[] = []
   const outputsData: Hex[] = []
 
-  const orderArgs = new OrderArgs(sellerLock, 0, totalValue)
-  const orderLock: CKBComponents.Script = {
-    ...getDexLockScript(isMainnet),
-    args: orderArgs.toHex(),
-  }
-  const orderCellCapacity = calculateXudtCellCapacity(orderLock, xudtTypeScript)
   outputs.push({
     lock: orderLock,
     type: xudtTypeScript,
