@@ -45,8 +45,11 @@ export const buildTakerTx = async ({ collector, joyID, buyer, orderOutPoints, fe
   const orderCells: CKBComponents.LiveCell[] = []
   for await (const outPoint of outPoints) {
     const cell = await collector.getLiveCell(outPoint)
+    if (!cell) {
+      throw new XudtException('The xudt cell specified by the out point has been spent')
+    }
     if (!cell.output.type || !cell.data) {
-      throw new XudtException('Xudt cell must have type script')
+      throw new XudtException('The xudt cell specified by the out point must have type script')
     }
     orderCells.push(cell)
   }

@@ -26,12 +26,15 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
   const orderCells: CKBComponents.LiveCell[] = []
   for await (const outPoint of outPoints) {
     const cell = await collector.getLiveCell(outPoint)
+    if (!cell) {
+      throw new XudtException('The xudt cell specified by the out point has been spent')
+    }
     const orderArgs = OrderArgs.fromHex(cell.output.lock.args)
     if (serializeScript(orderArgs.ownerLock) !== serializeScript(sellerLock)) {
       throw new XudtException('The xudt cell does not belong to the seller address')
     }
     if (!cell.output.type || !cell.data) {
-      throw new XudtException('Xudt cell must have type script')
+      throw new XudtException('The xudt cell specified by the out point must have type script')
     }
     orderInputsCapacity += BigInt(cell.output.capacity)
     orderCells.push(cell)
