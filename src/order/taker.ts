@@ -70,8 +70,8 @@ export const buildTakerTx = async ({ collector, joyID, buyer, orderOutPoints, fe
   const outputsData = [...orderOutputsData, ...xudtOutputsData]
 
   const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
-  const needCapacity = ((needInputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
-  const errMsg = `At least ${needCapacity} free CKB is required to take the order.`
+  const needCKB = ((needInputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+  const errMsg = `At least ${needCKB} free CKB is required to take the order.`
   const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
     emptyCells,
     needInputsCapacity,

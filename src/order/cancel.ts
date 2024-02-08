@@ -54,8 +54,8 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
   const outputsData = xudtOutputsData
 
   const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
-  const needCapacity = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
-  const errMsg = `At least ${needCapacity} free CKB (refundable) is required to cancel the sell order.`
+  const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+  const errMsg = `At least ${needCKB} free CKB (refundable) is required to cancel the sell order.`
   const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
     emptyCells,
     minCellCapacity,

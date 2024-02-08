@@ -44,8 +44,8 @@ export const buildMakerTx = async ({
   const orderCellCapacity = calculateXudtCellCapacity(orderLock, xudtTypeScript)
 
   const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
-  const needCapacity = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
-  const errMsg = `At least ${needCapacity} free CKB (refundable) is required to place a sell order.`
+  const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+  const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
   const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
     emptyCells,
     orderCellCapacity,
