@@ -2,7 +2,7 @@ import axios from 'axios'
 import CKB from '@nervosnetwork/ckb-sdk-core'
 import { toCamelcase } from '../utils/case-parser'
 import { IndexerCell, CollectResult, IndexerCapacity, CollectXudtResult } from '../types/collector'
-import { MIN_CAPACITY } from '../constants'
+import { CKB_UNIT, MIN_CAPACITY } from '../constants'
 import { CapacityNotEnoughException, IndexerException, XudtAmountNotEnoughException } from '../exceptions'
 import { leToU128 } from '../utils'
 
@@ -117,7 +117,7 @@ export class Collector {
     }
   }
 
-  collectInputs(liveCells: IndexerCell[], needCapacity: bigint, fee: bigint, minCapacity?: bigint): CollectResult {
+  collectInputs(liveCells: IndexerCell[], needCapacity: bigint, fee: bigint, minCapacity?: bigint, errMsg?: string): CollectResult {
     const changeCapacity = minCapacity ?? MIN_CAPACITY
     let inputs: CKBComponents.CellInput[] = []
     let sum = BigInt(0)
@@ -134,11 +134,9 @@ export class Collector {
         break
       }
     }
-    if (sum < needCapacity + fee) {
-      throw new CapacityNotEnoughException('Capacity not enough')
-    }
-    if (sum < needCapacity + changeCapacity + fee && sum !== needCapacity + fee) {
-      throw new CapacityNotEnoughException('Capacity not enough for change')
+    if (sum < needCapacity + changeCapacity + fee) {
+      const message = errMsg ?? 'Insufficient free CKB balance'
+      throw new CapacityNotEnoughException(message)
     }
     return { inputs, capacity: sum }
   }
@@ -162,7 +160,7 @@ export class Collector {
       }
     }
     if (sumAmount < needAmount) {
-      throw new XudtAmountNotEnoughException('Capacity not enough')
+      throw new XudtAmountNotEnoughException('Insufficient Xudt balance')
     }
     return { inputs, capacity: sumCapacity, amount: sumAmount }
   }

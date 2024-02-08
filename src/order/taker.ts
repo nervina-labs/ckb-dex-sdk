@@ -1,5 +1,13 @@
 import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
-import { getCotaTypeScript, getXudtDep, getJoyIDCellDep, getDexCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE } from '../constants'
+import {
+  getCotaTypeScript,
+  getXudtDep,
+  getJoyIDCellDep,
+  getDexCellDep,
+  MAX_FEE,
+  JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
+  CKB_UNIT,
+} from '../constants'
 import { Hex, SubkeyUnlockReq, TakerParams, TakerResult } from '../types'
 import { append0x } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
@@ -62,7 +70,15 @@ export const buildTakerTx = async ({ collector, joyID, buyer, orderOutPoints, fe
   const outputsData = [...orderOutputsData, ...xudtOutputsData]
 
   const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
-  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(emptyCells, needInputsCapacity, txFee, minCellCapacity)
+  const needCapacity = ((needInputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+  const errMsg = `At least ${needCapacity} free CKB is required to take the order.`
+  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
+    emptyCells,
+    needInputsCapacity,
+    txFee,
+    minCellCapacity,
+    errMsg,
+  )
   const orderInputs: CKBComponents.CellInput[] = outPoints.map(outPoint => ({
     previousOutput: outPoint,
     since: '0x0',

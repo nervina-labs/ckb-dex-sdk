@@ -1,5 +1,13 @@
 import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
-import { getCotaTypeScript, getXudtDep, getJoyIDCellDep, getDexCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE } from '../constants'
+import {
+  getCotaTypeScript,
+  getXudtDep,
+  getJoyIDCellDep,
+  getDexCellDep,
+  MAX_FEE,
+  JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
+  CKB_UNIT,
+} from '../constants'
 import { CancelParams, SubkeyUnlockReq, TakerResult } from '../types'
 import { append0x } from '../utils'
 import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
@@ -46,7 +54,15 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
   const outputsData = xudtOutputsData
 
   const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
-  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(emptyCells, minCellCapacity, txFee, minCellCapacity)
+  const needCapacity = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+  const errMsg = `At least ${needCapacity} free CKB (refundable) is required to cancel the sell order.`
+  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
+    emptyCells,
+    minCellCapacity,
+    txFee,
+    minCellCapacity,
+    errMsg,
+  )
   const orderInputs: CKBComponents.CellInput[] = outPoints.map(outPoint => ({
     previousOutput: outPoint,
     since: '0x0',
