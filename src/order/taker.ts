@@ -7,8 +7,9 @@ import {
   MAX_FEE,
   JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
   CKB_UNIT,
+  getSudtDep,
 } from '../constants'
-import { Hex, SubkeyUnlockReq, TakerParams, TakerResult } from '../types'
+import { CKBAsset, Hex, SubkeyUnlockReq, TakerParams, TakerResult } from '../types'
 import { append0x } from '../utils'
 import { UdtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
 import { calculateEmptyCellMinCapacity, calculateTransactionFee, deserializeOutPoints, cleanUpUdtOutputs } from './helper'
@@ -34,7 +35,14 @@ export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
   return { orderOutputs, orderOutputsData, sumOrderCapacity }
 }
 
-export const buildTakerTx = async ({ collector, joyID, buyer, orderOutPoints, fee }: TakerParams): Promise<TakerResult> => {
+export const buildTakerTx = async ({
+  collector,
+  joyID,
+  buyer,
+  orderOutPoints,
+  fee,
+  ckbAsset = CKBAsset.XUDT,
+}: TakerParams): Promise<TakerResult> => {
   let txFee = fee ?? MAX_FEE
   const isMainnet = buyer.startsWith('ckb')
   const buyerLock = addressToScript(buyer)
@@ -62,38 +70,47 @@ export const buildTakerTx = async ({ collector, joyID, buyer, orderOutPoints, fe
     orderCells.push(cell)
   }
 
+  let inputs: CKBComponents.CellInput[] = []
+  const outputs: CKBComponents.CellOutput[] = []
+  const outputsData: Hex[] = []
+  let cellDeps: CKBComponents.CellDep[] = [getDexCellDep(isMainnet)]
+  let changeCapacity = BigInt(0)
+
   const { orderOutputs, orderOutputsData, sumOrderCapacity } = matchOrderOutputs(orderCells)
-  const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, buyerLock)
-
-  const needInputsCapacity = sumOrderCapacity + sumUdtCapacity
-  const outputs = [...orderOutputs, ...udtOutputs]
-  const outputsData = [...orderOutputsData, ...udtOutputsData]
-
-  const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
-  const needCKB = ((needInputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
-  const errMsg = `At least ${needCKB} free CKB is required to take the order.`
-  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
-    emptyCells,
-    needInputsCapacity,
-    txFee,
-    minCellCapacity,
-    errMsg,
-  )
   const orderInputs: CKBComponents.CellInput[] = outPoints.map(outPoint => ({
     previousOutput: outPoint,
     since: '0x0',
   }))
-  const inputs = [...orderInputs, ...emptyInputs]
+  if (ckbAsset === CKBAsset.XUDT || ckbAsset === CKBAsset.SUDT) {
+    const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, buyerLock)
 
-  const changeCapacity = inputsCapacity - needInputsCapacity - txFee
-  const changeOutput: CKBComponents.CellOutput = {
-    lock: buyerLock,
-    capacity: append0x(changeCapacity.toString(16)),
+    const needInputsCapacity = sumOrderCapacity + sumUdtCapacity
+    const outputs = [...orderOutputs, ...udtOutputs]
+    const outputsData = [...orderOutputsData, ...udtOutputsData]
+
+    const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
+    const needCKB = ((needInputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const errMsg = `At least ${needCKB} free CKB is required to take the order.`
+    const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
+      emptyCells,
+      needInputsCapacity,
+      txFee,
+      minCellCapacity,
+      errMsg,
+    )
+    inputs = [...orderInputs, ...emptyInputs]
+
+    changeCapacity = inputsCapacity - needInputsCapacity - txFee
+    const changeOutput: CKBComponents.CellOutput = {
+      lock: buyerLock,
+      capacity: append0x(changeCapacity.toString(16)),
+    }
+    outputs.push(changeOutput)
+    outputsData.push('0x')
+
+    cellDeps.push(ckbAsset === CKBAsset.XUDT ? getXudtDep(isMainnet) : getSudtDep(isMainnet))
   }
-  outputs.push(changeOutput)
-  outputsData.push('0x')
 
-  let cellDeps: CKBComponents.CellDep[] = [getXudtDep(isMainnet), getDexCellDep(isMainnet)]
   if (joyID) {
     cellDeps.push(getJoyIDCellDep(isMainnet))
   }

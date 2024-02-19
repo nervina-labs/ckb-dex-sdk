@@ -7,8 +7,9 @@ import {
   MAX_FEE,
   JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
   CKB_UNIT,
+  getSudtDep,
 } from '../constants'
-import { CancelParams, SubkeyUnlockReq, TakerResult } from '../types'
+import { CKBAsset, CancelParams, Hex, SubkeyUnlockReq, TakerResult } from '../types'
 import { append0x } from '../utils'
 import { UdtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
 import {
@@ -20,7 +21,14 @@ import {
 import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
 
-export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, fee }: CancelParams): Promise<TakerResult> => {
+export const buildCancelTx = async ({
+  collector,
+  joyID,
+  seller,
+  orderOutPoints,
+  fee,
+  ckbAsset = CKBAsset.XUDT,
+}: CancelParams): Promise<TakerResult> => {
   let txFee = fee ?? MAX_FEE
   const isMainnet = seller.startsWith('ckb')
   const sellerLock = addressToScript(seller)
@@ -53,36 +61,45 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
     orderCells.push(cell)
   }
 
-  const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, sellerLock)
+  let inputs: CKBComponents.CellInput[] = []
+  const outputs: CKBComponents.CellOutput[] = []
+  const outputsData: Hex[] = []
+  let cellDeps: CKBComponents.CellDep[] = [getDexCellDep(isMainnet)]
+  let changeCapacity = BigInt(0)
 
-  const outputs = udtOutputs
-  const outputsData = udtOutputsData
-
-  const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
-  const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
-  const errMsg = `At least ${needCKB} free CKB (refundable) is required to cancel the sell order.`
-  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
-    emptyCells,
-    minCellCapacity,
-    txFee,
-    minCellCapacity,
-    errMsg,
-  )
   const orderInputs: CKBComponents.CellInput[] = outPoints.map(outPoint => ({
     previousOutput: outPoint,
     since: '0x0',
   }))
-  const inputs = [...orderInputs, ...emptyInputs]
+  if (ckbAsset === CKBAsset.XUDT || ckbAsset === CKBAsset.SUDT) {
+    const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, sellerLock)
 
-  const changeCapacity = inputsCapacity + orderInputsCapacity - sumUdtCapacity - txFee
-  const changeOutput: CKBComponents.CellOutput = {
-    lock: sellerLock,
-    capacity: append0x(changeCapacity.toString(16)),
+    const outputs = udtOutputs
+    const outputsData = udtOutputsData
+
+    const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
+    const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const errMsg = `At least ${needCKB} free CKB (refundable) is required to cancel the sell order.`
+    const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
+      emptyCells,
+      minCellCapacity,
+      txFee,
+      minCellCapacity,
+      errMsg,
+    )
+    inputs = [...orderInputs, ...emptyInputs]
+
+    const changeCapacity = inputsCapacity + orderInputsCapacity - sumUdtCapacity - txFee
+    const changeOutput: CKBComponents.CellOutput = {
+      lock: sellerLock,
+      capacity: append0x(changeCapacity.toString(16)),
+    }
+    outputs.push(changeOutput)
+    outputsData.push('0x')
+
+    cellDeps.push(ckbAsset === CKBAsset.XUDT ? getXudtDep(isMainnet) : getSudtDep(isMainnet))
   }
-  outputs.push(changeOutput)
-  outputsData.push('0x')
 
-  let cellDeps: CKBComponents.CellDep[] = [getXudtDep(isMainnet), getDexCellDep(isMainnet)]
   if (joyID) {
     cellDeps.push(getJoyIDCellDep(isMainnet))
   }

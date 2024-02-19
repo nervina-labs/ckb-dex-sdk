@@ -18,7 +18,7 @@ interface BaseParams {
   collector: Collector
   fee?: bigint
   joyID?: JoyIDConfig
-  asset?: CKBAsset
+  ckbAsset?: CKBAsset
 }
 
 export interface MakerParams extends BaseParams {

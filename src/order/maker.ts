@@ -8,6 +8,7 @@ import {
   MAX_FEE,
   JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
   CKB_UNIT,
+  getSudtDep,
 } from '../constants'
 import { Hex, SubkeyUnlockReq, MakerParams, MakerResult, CKBAsset } from '../types'
 import { append0x, u128ToLe } from '../utils'
@@ -24,7 +25,7 @@ export const buildMakerTx = async ({
   totalValue,
   assetType,
   fee,
-  asset = CKBAsset.XUDT,
+  ckbAsset = CKBAsset.XUDT,
 }: MakerParams): Promise<MakerResult> => {
   let txFee = fee ?? MAX_FEE
   const isMainnet = seller.startsWith('ckb')
@@ -55,45 +56,50 @@ export const buildMakerTx = async ({
     errMsg,
   )
 
-  const udtCells = await collector.getCells({
-    lock: sellerLock,
-    type: assetTypeScript,
-  })
-  if (!udtCells || udtCells.length === 0) {
-    throw new UdtException('The address has no UDT cells')
-  }
-  let { inputs, capacity: udtInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
-  inputs = [...emptyInputs, ...inputs]
-
-  // build dex and other outputs and outputsData
+  let inputs: CKBComponents.CellInput[] = []
   const outputs: CKBComponents.CellOutput[] = []
   const outputsData: Hex[] = []
+  let cellDeps: CKBComponents.CellDep[] = []
+  let changeCapacity = BigInt(0)
 
-  outputs.push({
-    lock: orderLock,
-    type: assetTypeScript,
-    capacity: append0x(orderCellCapacity.toString(16)),
-  })
-  outputsData.push(append0x(u128ToLe(listAmount)))
-
-  let changeCapacity = emptyInputsCapacity + udtInputsCapacity - orderCellCapacity - txFee
-  if (inputsAmount > listAmount) {
-    const udtCellCapacity = calculateUdtCellCapacity(sellerLock, assetTypeScript)
-    changeCapacity -= udtCellCapacity
-    outputs.push({
+  if (ckbAsset === CKBAsset.XUDT || ckbAsset === CKBAsset.SUDT) {
+    const udtCells = await collector.getCells({
       lock: sellerLock,
       type: assetTypeScript,
-      capacity: append0x(udtCellCapacity.toString(16)),
     })
-    outputsData.push(append0x(u128ToLe(inputsAmount - listAmount)))
-  }
-  outputs.push({
-    lock: sellerLock,
-    capacity: append0x(changeCapacity.toString(16)),
-  })
-  outputsData.push('0x')
+    if (!udtCells || udtCells.length === 0) {
+      throw new UdtException('The address has no UDT cells')
+    }
+    const { inputs: udtInputs, capacity: udtInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
+    inputs = [...emptyInputs, ...udtInputs]
 
-  let cellDeps: CKBComponents.CellDep[] = [getXudtDep(isMainnet)]
+    outputs.push({
+      lock: orderLock,
+      type: assetTypeScript,
+      capacity: append0x(orderCellCapacity.toString(16)),
+    })
+    outputsData.push(append0x(u128ToLe(listAmount)))
+
+    changeCapacity = emptyInputsCapacity + udtInputsCapacity - orderCellCapacity - txFee
+    if (inputsAmount > listAmount) {
+      const udtCellCapacity = calculateUdtCellCapacity(sellerLock, assetTypeScript)
+      changeCapacity -= udtCellCapacity
+      outputs.push({
+        lock: sellerLock,
+        type: assetTypeScript,
+        capacity: append0x(udtCellCapacity.toString(16)),
+      })
+      outputsData.push(append0x(u128ToLe(inputsAmount - listAmount)))
+    }
+    outputs.push({
+      lock: sellerLock,
+      capacity: append0x(changeCapacity.toString(16)),
+    })
+    outputsData.push('0x')
+
+    cellDeps.push(ckbAsset === CKBAsset.XUDT ? getXudtDep(isMainnet) : getSudtDep(isMainnet))
+  }
+
   if (joyID) {
     cellDeps.push(getJoyIDCellDep(isMainnet))
   }
