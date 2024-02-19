@@ -43,7 +43,7 @@ const TestnetInfo = {
 
   DexLockDep: {
     outPoint: {
-      txHash: '0x9305b2af4567255bfa7df7c9e9ebb531b26ce8b6779ffe01d51416d8bc620613',
+      txHash: '0x70accc6114f425fc7cc0b25a8cfc435580b6dc6c529b26ecd36be6056b76661c',
       index: '0x0',
     },
     depType: 'code',
