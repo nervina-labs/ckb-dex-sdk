@@ -4,7 +4,7 @@ export class CapacityNotEnoughException extends Error {
   }
 }
 
-export class XudtAmountNotEnoughException extends Error {
+export class UdtAmountNotEnoughException extends Error {
   constructor(message: string) {
     super(message)
   }
@@ -16,7 +16,7 @@ export class IndexerException extends Error {
   }
 }
 
-export class XudtException extends Error {
+export class UdtException extends Error {
   constructor(message: string) {
     super(message)
   }

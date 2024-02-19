@@ -57,7 +57,7 @@ const cancel = async () => {
   const signedTx = signSecp256r1Tx(key, rawTx, witnessIndex)
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
-  console.info(`The xudt asset has been cancelled with tx hash: ${txHash}`)
+  console.info(`The udt asset has been cancelled with tx hash: ${txHash}`)
 }
 
 cancel()

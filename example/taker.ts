@@ -63,7 +63,7 @@ const taker = async () => {
   console.log(JSON.stringify(signedTx))
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
-  console.info(`The taker of xudt asset has been finished with tx hash: ${txHash}`)
+  console.info(`The taker of udt asset has been finished with tx hash: ${txHash}`)
 }
 
 taker()

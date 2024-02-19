@@ -6,9 +6,9 @@ import { blockchain } from '@ckb-lumos/base'
 import { serializeScript } from '@nervosnetwork/ckb-sdk-utils'
 
 // minimum occupied capacity and 1 ckb for transaction fee
-export const calculateXudtCellCapacity = (lock: CKBComponents.Script, xudtType: CKBComponents.Script): bigint => {
+export const calculateUdtCellCapacity = (lock: CKBComponents.Script, udtType: CKBComponents.Script): bigint => {
   const lockArgsSize = remove0x(lock.args).length / 2
-  const typeArgsSize = remove0x(xudtType.args).length / 2
+  const typeArgsSize = remove0x(udtType.args).length / 2
   const cellSize = 33 + lockArgsSize + 33 + typeArgsSize + 8 + 16
   return BigInt(cellSize + 1) * CKB_UNIT
 }
@@ -38,30 +38,30 @@ export const deserializeOutPoints = (outPointHexList: Hex[]) => {
   return outPoints
 }
 
-export const cleanUpXudtOutputs = (orderCells: CKBComponents.LiveCell[], lock: CKBComponents.Script) => {
-  const orderXudtTypeHexSet = new Set(orderCells.map(cell => serializeScript(cell.output.type!)))
-  const orderXudtTypes: CKBComponents.Script[] = []
-  for (const orderXudtTypeHex of orderXudtTypeHexSet) {
-    orderXudtTypes.push(blockchain.Script.unpack(orderXudtTypeHex) as CKBComponents.Script)
+export const cleanUpUdtOutputs = (orderCells: CKBComponents.LiveCell[], lock: CKBComponents.Script) => {
+  const orderUdtTypeHexSet = new Set(orderCells.map(cell => serializeScript(cell.output.type!)))
+  const orderUdtTypes: CKBComponents.Script[] = []
+  for (const orderUdtTypeHex of orderUdtTypeHexSet) {
+    orderUdtTypes.push(blockchain.Script.unpack(orderUdtTypeHex) as CKBComponents.Script)
   }
 
-  const xudtOutputs: CKBComponents.CellOutput[] = []
-  const xudtOutputsData: Hex[] = []
-  let sumXudtCapacity = BigInt(0)
+  const udtOutputs: CKBComponents.CellOutput[] = []
+  const udtOutputsData: Hex[] = []
+  let sumUdtCapacity = BigInt(0)
 
-  for (const orderXudtType of orderXudtTypes) {
-    sumXudtCapacity += calculateXudtCellCapacity(lock, orderXudtType!)
-    xudtOutputs.push({
+  for (const orderUdtType of orderUdtTypes) {
+    sumUdtCapacity += calculateUdtCellCapacity(lock, orderUdtType!)
+    udtOutputs.push({
       lock: lock,
-      type: orderXudtType,
-      capacity: append0x(calculateXudtCellCapacity(lock, orderXudtType!).toString(16)),
+      type: orderUdtType,
+      capacity: append0x(calculateUdtCellCapacity(lock, orderUdtType!).toString(16)),
     })
-    const xudtAmount = orderCells
-      .filter(cell => serializeScript(cell.output.type!) === serializeScript(orderXudtType))
+    const udtAmount = orderCells
+      .filter(cell => serializeScript(cell.output.type!) === serializeScript(orderUdtType))
       .map(cell => leToU128(cell.data?.content!))
       .reduce((prev, current) => prev + current, BigInt(0))
-    xudtOutputsData.push(append0x(u128ToLe(xudtAmount)))
+    udtOutputsData.push(append0x(u128ToLe(udtAmount)))
   }
 
-  return { xudtOutputs, xudtOutputsData, sumXudtCapacity }
+  return { udtOutputs, udtOutputsData, sumUdtCapacity }
 }

@@ -1,26 +1,33 @@
 import { CKBTransaction, ConnectResponseData } from '@joyid/ckb'
 import { Aggregator } from '../aggregator'
 import { Collector } from '../collector'
-import { Address, Hex, U8 } from './common'
+import { Address, Hex } from './common'
 
 export interface JoyIDConfig {
   aggregator: Aggregator
   connectData: ConnectResponseData
 }
 
+export enum CKBAsset {
+  XUDT,
+  SUDT,
+  NFT,
+}
+
 interface BaseParams {
   collector: Collector
   fee?: bigint
   joyID?: JoyIDConfig
+  asset?: CKBAsset
 }
 
 export interface MakerParams extends BaseParams {
   seller: Address
   // Unit is shannon for CKB native token
   totalValue: bigint
-  // The UDT amount to list
-  listAmount: bigint
-  xudtType: Hex
+  // The UDT amount to list and it's optional for NFT asset
+  listAmount?: bigint
+  assetType: Hex
 }
 
 export interface MakerResult {

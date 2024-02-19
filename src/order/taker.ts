@@ -10,8 +10,8 @@ import {
 } from '../constants'
 import { Hex, SubkeyUnlockReq, TakerParams, TakerResult } from '../types'
 import { append0x } from '../utils'
-import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
-import { calculateEmptyCellMinCapacity, calculateTransactionFee, deserializeOutPoints, cleanUpXudtOutputs } from './helper'
+import { UdtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
+import { calculateEmptyCellMinCapacity, calculateTransactionFee, deserializeOutPoints, cleanUpUdtOutputs } from './helper'
 import { OrderArgs } from './orderArgs'
 import { CKBTransaction } from '@joyid/ckb'
 
@@ -49,25 +49,25 @@ export const buildTakerTx = async ({ collector, joyID, buyer, orderOutPoints, fe
   // Deserialize outPointHex array to outPoint array
   const outPoints = deserializeOutPoints(orderOutPoints)
 
-  // Fetch xudt order cells with outPoints
+  // Fetch udt order cells with outPoints
   const orderCells: CKBComponents.LiveCell[] = []
   for await (const outPoint of outPoints) {
     const cell = await collector.getLiveCell(outPoint)
     if (!cell) {
-      throw new XudtException('The xudt cell specified by the out point has been spent')
+      throw new UdtException('The udt cell specified by the out point has been spent')
     }
     if (!cell.output.type || !cell.data) {
-      throw new XudtException('The xudt cell specified by the out point must have type script')
+      throw new UdtException('The udt cell specified by the out point must have type script')
     }
     orderCells.push(cell)
   }
 
   const { orderOutputs, orderOutputsData, sumOrderCapacity } = matchOrderOutputs(orderCells)
-  const { xudtOutputs, xudtOutputsData, sumXudtCapacity } = cleanUpXudtOutputs(orderCells, buyerLock)
+  const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, buyerLock)
 
-  const needInputsCapacity = sumOrderCapacity + sumXudtCapacity
-  const outputs = [...orderOutputs, ...xudtOutputs]
-  const outputsData = [...orderOutputsData, ...xudtOutputsData]
+  const needInputsCapacity = sumOrderCapacity + sumUdtCapacity
+  const outputs = [...orderOutputs, ...udtOutputs]
+  const outputsData = [...orderOutputsData, ...udtOutputsData]
 
   const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
   const needCKB = ((needInputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()

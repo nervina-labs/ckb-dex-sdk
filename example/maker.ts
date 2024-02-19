@@ -50,14 +50,14 @@ const maker = async () => {
     seller,
     listAmount,
     totalValue,
-    xudtType: append0x(serializeScript(xudtType)),
+    assetType: append0x(serializeScript(xudtType)),
   })
 
   const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
   const signedTx = signSecp256r1Tx(key, rawTx)
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
-  console.info(`The xudt asset has been listed with tx hash: ${txHash}`)
+  console.info(`The udt asset has been listed with tx hash: ${txHash}`)
 }
 
 maker()

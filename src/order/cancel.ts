@@ -10,8 +10,13 @@ import {
 } from '../constants'
 import { CancelParams, SubkeyUnlockReq, TakerResult } from '../types'
 import { append0x } from '../utils'
-import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
-import { calculateEmptyCellMinCapacity, calculateTransactionFee, cleanUpXudtOutputs, deserializeOutPoints } from './helper'
+import { UdtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
+import {
+  calculateEmptyCellMinCapacity,
+  calculateTransactionFee,
+  cleanUpUdtOutputs as cleanUpUdtOutputs,
+  deserializeOutPoints,
+} from './helper'
 import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
 
@@ -30,28 +35,28 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
   const outPoints = deserializeOutPoints(orderOutPoints)
 
   let orderInputsCapacity = BigInt(0)
-  // Fetch xudt order cells with outPoints
+  // Fetch udt order cells with outPoints
   const orderCells: CKBComponents.LiveCell[] = []
   for await (const outPoint of outPoints) {
     const cell = await collector.getLiveCell(outPoint)
     if (!cell) {
-      throw new XudtException('The xudt cell specified by the out point has been spent')
+      throw new UdtException('The udt cell specified by the out point has been spent')
     }
     const orderArgs = OrderArgs.fromHex(cell.output.lock.args)
     if (serializeScript(orderArgs.ownerLock) !== serializeScript(sellerLock)) {
-      throw new XudtException('The xudt cell does not belong to the seller address')
+      throw new UdtException('The udt cell does not belong to the seller address')
     }
     if (!cell.output.type || !cell.data) {
-      throw new XudtException('The xudt cell specified by the out point must have type script')
+      throw new UdtException('The udt cell specified by the out point must have type script')
     }
     orderInputsCapacity += BigInt(cell.output.capacity)
     orderCells.push(cell)
   }
 
-  const { xudtOutputs, xudtOutputsData, sumXudtCapacity } = cleanUpXudtOutputs(orderCells, sellerLock)
+  const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, sellerLock)
 
-  const outputs = xudtOutputs
-  const outputsData = xudtOutputsData
+  const outputs = udtOutputs
+  const outputsData = udtOutputsData
 
   const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
   const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
@@ -69,7 +74,7 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
   }))
   const inputs = [...orderInputs, ...emptyInputs]
 
-  const changeCapacity = inputsCapacity + orderInputsCapacity - sumXudtCapacity - txFee
+  const changeCapacity = inputsCapacity + orderInputsCapacity - sumUdtCapacity - txFee
   const changeOutput: CKBComponents.CellOutput = {
     lock: sellerLock,
     capacity: append0x(changeCapacity.toString(16)),

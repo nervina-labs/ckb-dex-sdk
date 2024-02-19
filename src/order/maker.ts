@@ -9,10 +9,10 @@ import {
   JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
   CKB_UNIT,
 } from '../constants'
-import { Hex, SubkeyUnlockReq, MakerParams, MakerResult } from '../types'
+import { Hex, SubkeyUnlockReq, MakerParams, MakerResult, CKBAsset } from '../types'
 import { append0x, u128ToLe } from '../utils'
-import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
-import { calculateEmptyCellMinCapacity, calculateTransactionFee, calculateXudtCellCapacity } from './helper'
+import { UdtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
+import { calculateEmptyCellMinCapacity, calculateTransactionFee, calculateUdtCellCapacity } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
 
@@ -20,15 +20,16 @@ export const buildMakerTx = async ({
   collector,
   joyID,
   seller,
-  listAmount,
+  listAmount = BigInt(0),
   totalValue,
-  xudtType,
+  assetType,
   fee,
+  asset = CKBAsset.XUDT,
 }: MakerParams): Promise<MakerResult> => {
   let txFee = fee ?? MAX_FEE
   const isMainnet = seller.startsWith('ckb')
   const sellerLock = addressToScript(seller)
-  const xudtTypeScript = blockchain.Script.unpack(xudtType) as CKBComponents.Script
+  const assetTypeScript = blockchain.Script.unpack(assetType) as CKBComponents.Script
 
   const emptyCells = await collector.getCells({
     lock: sellerLock,
@@ -41,7 +42,7 @@ export const buildMakerTx = async ({
     ...getDexLockScript(isMainnet),
     args: orderArgs.toHex(),
   }
-  const orderCellCapacity = calculateXudtCellCapacity(orderLock, xudtTypeScript)
+  const orderCellCapacity = calculateUdtCellCapacity(orderLock, assetTypeScript)
 
   const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
   const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
@@ -54,14 +55,14 @@ export const buildMakerTx = async ({
     errMsg,
   )
 
-  const xudtCells = await collector.getCells({
+  const udtCells = await collector.getCells({
     lock: sellerLock,
-    type: xudtTypeScript,
+    type: assetTypeScript,
   })
-  if (!xudtCells || xudtCells.length === 0) {
-    throw new XudtException('The address has no xudt cells')
+  if (!udtCells || udtCells.length === 0) {
+    throw new UdtException('The address has no UDT cells')
   }
-  let { inputs, capacity: xudtInputsCapacity, amount: inputsAmount } = collector.collectXudtInputs(xudtCells, listAmount)
+  let { inputs, capacity: udtInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
   inputs = [...emptyInputs, ...inputs]
 
   // build dex and other outputs and outputsData
@@ -70,19 +71,19 @@ export const buildMakerTx = async ({
 
   outputs.push({
     lock: orderLock,
-    type: xudtTypeScript,
+    type: assetTypeScript,
     capacity: append0x(orderCellCapacity.toString(16)),
   })
   outputsData.push(append0x(u128ToLe(listAmount)))
 
-  let changeCapacity = emptyInputsCapacity + xudtInputsCapacity - orderCellCapacity - txFee
+  let changeCapacity = emptyInputsCapacity + udtInputsCapacity - orderCellCapacity - txFee
   if (inputsAmount > listAmount) {
-    const xudtCellCapacity = calculateXudtCellCapacity(sellerLock, xudtTypeScript)
-    changeCapacity -= xudtCellCapacity
+    const udtCellCapacity = calculateUdtCellCapacity(sellerLock, assetTypeScript)
+    changeCapacity -= udtCellCapacity
     outputs.push({
       lock: sellerLock,
-      type: xudtTypeScript,
-      capacity: append0x(xudtCellCapacity.toString(16)),
+      type: assetTypeScript,
+      capacity: append0x(udtCellCapacity.toString(16)),
     })
     outputsData.push(append0x(u128ToLe(inputsAmount - listAmount)))
   }

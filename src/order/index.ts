@@ -1,5 +1,5 @@
 export { buildMakerTx } from './maker'
 export { buildTakerTx } from './taker'
 export { buildCancelTx } from './cancel'
-export { calculateXudtCellCapacity, calculateEmptyCellMinCapacity } from './helper'
+export { calculateUdtCellCapacity, calculateEmptyCellMinCapacity } from './helper'
 export * from './orderArgs'

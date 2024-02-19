@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
-  calculateXudtCellCapacity,
+  calculateUdtCellCapacity,
   calculateEmptyCellMinCapacity,
   calculateTransactionFee,
   deserializeOutPoints,
-  cleanUpXudtOutputs,
+  cleanUpUdtOutputs,
 } from './helper'
 import { matchOrderOutputs } from './taker'
 import { Hex } from '../types'
@@ -12,7 +12,7 @@ import { OrderArgs } from './orderArgs'
 import { serializeScript } from '@nervosnetwork/ckb-sdk-utils'
 
 describe('dex test cases', () => {
-  it('calculateXudtCellCapacity', async () => {
+  it('calculateUdtCellCapacity', async () => {
     const joyIDLock: CKBComponents.Script = {
       codeHash: '0xd23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac',
       hashType: 'type',
@@ -23,11 +23,11 @@ describe('dex test cases', () => {
       hashType: 'type',
       args: '0x06ec22c2def100bba3e295a1ff279c490d227151bf3166a4f3f008906c849399',
     }
-    const capacity = calculateXudtCellCapacity(joyIDLock, xudtType)
+    const capacity = calculateUdtCellCapacity(joyIDLock, xudtType)
     expect(BigInt(145_0000_0000)).toBe(capacity)
   })
 
-  it('calculateOrderXudtCellCapacity', async () => {
+  it('calculateOrderUdtCellCapacity', async () => {
     const orderLock: CKBComponents.Script = {
       codeHash: '0x493510d54e815611a643af97b5ac93bfbb45ddc2aae0f2dceffaf3408b4fcfcd',
       hashType: 'type',
@@ -38,7 +38,7 @@ describe('dex test cases', () => {
       hashType: 'type',
       args: '0x06ec22c2def100bba3e295a1ff279c490d227151bf3166a4f3f008906c849399',
     }
-    const capacity = calculateXudtCellCapacity(orderLock, xudtType)
+    const capacity = calculateUdtCellCapacity(orderLock, xudtType)
     expect(BigInt(215_0000_0000)).toBe(capacity)
   })
 
@@ -171,13 +171,13 @@ describe('dex test cases', () => {
     },
   ]
 
-  it('cleanUpXudtOutputs', async () => {
+  it('cleanUpUdtOutputs', async () => {
     const joyIDLock: CKBComponents.Script = {
       codeHash: '0xd23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac',
       hashType: 'type',
       args: '0x00010748fce626e566ab4dbd1c95498bf10518443fc1',
     }
-    const { xudtOutputs, xudtOutputsData, sumXudtCapacity } = cleanUpXudtOutputs(orderCells, joyIDLock)
+    const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, joyIDLock)
 
     const expectedOutputs = [
       {
@@ -226,9 +226,9 @@ describe('dex test cases', () => {
       '0x00e87648170000000000000000000000',
     ]
     const expectedCapacity = BigInt(435_0000_0000)
-    expect(JSON.stringify(expectedOutputs)).toBe(JSON.stringify(xudtOutputs))
-    expect(JSON.stringify(expectedOutputsData)).toBe(JSON.stringify(xudtOutputsData))
-    expect(expectedCapacity).toBe(sumXudtCapacity)
+    expect(JSON.stringify(expectedOutputs)).toBe(JSON.stringify(udtOutputs))
+    expect(JSON.stringify(expectedOutputsData)).toBe(JSON.stringify(udtOutputsData))
+    expect(expectedCapacity).toBe(sumUdtCapacity)
   })
 
   it('matchOrderOutputs', async () => {
