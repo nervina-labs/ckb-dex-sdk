@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js'
 import { CKB_UNIT } from '../constants'
 import { append0x, leToU128, remove0x, u128ToLe } from '../utils'
-import { Hex } from '../types'
+import { CKBAsset, Hex, IndexerCell } from '../types'
 import { blockchain } from '@ckb-lumos/base'
 import { serializeScript } from '@nervosnetwork/ckb-sdk-utils'
 
@@ -10,6 +10,19 @@ export const calculateUdtCellCapacity = (lock: CKBComponents.Script, udtType: CK
   const lockArgsSize = remove0x(lock.args).length / 2
   const typeArgsSize = remove0x(udtType.args).length / 2
   const cellSize = 33 + lockArgsSize + 33 + typeArgsSize + 8 + 16
+  return BigInt(cellSize + 1) * CKB_UNIT
+}
+
+// minimum occupied capacity and 1 ckb for transaction fee
+export const calculateNFTCellCapacity = (lock: CKBComponents.Script, cell: IndexerCell | CKBComponents.LiveCell): bigint => {
+  const lockArgsSize = remove0x(lock.args).length / 2
+  const cellDataSize = remove0x('outputData' in cell ? cell.outputData : cell.data?.content!).length / 2
+  let cellSize = 33 + lockArgsSize + 8 + cellDataSize
+
+  if (cell.output.type) {
+    const typeArgsSize = remove0x(cell.output.type.args).length / 2
+    cellSize += 33 + typeArgsSize
+  }
   return BigInt(cellSize + 1) * CKB_UNIT
 }
 
@@ -64,4 +77,8 @@ export const cleanUpUdtOutputs = (orderCells: CKBComponents.LiveCell[], lock: CK
   }
 
   return { udtOutputs, udtOutputsData, sumUdtCapacity }
+}
+
+export const isUdtAsset = (asset: CKBAsset) => {
+  return asset === CKBAsset.XUDT || asset === CKBAsset.SUDT
 }

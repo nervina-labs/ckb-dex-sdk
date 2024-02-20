@@ -16,7 +16,13 @@ export class IndexerException extends Error {
   }
 }
 
-export class UdtException extends Error {
+export class AssetException extends Error {
+  constructor(message: string) {
+    super(message)
+  }
+}
+
+export class NFTException extends Error {
   constructor(message: string) {
     super(message)
   }

@@ -232,7 +232,7 @@ describe('dex test cases', () => {
   })
 
   it('matchOrderOutputs', async () => {
-    const { orderOutputs, orderOutputsData, sumOrderCapacity } = matchOrderOutputs(orderCells)
+    const { sellerOutputs, sellerOutputsData, sumSellerCapacity } = matchOrderOutputs(orderCells)
 
     const expectedOutputs = [
       {
@@ -278,8 +278,8 @@ describe('dex test cases', () => {
     ]
     const expectedOutputsData: Hex[] = ['0x', '0x', '0x', '0x', '0x']
     const expectedCapacity = BigInt(12500_0000_0000)
-    expect(JSON.stringify(expectedOutputs)).toBe(JSON.stringify(orderOutputs))
-    expect(JSON.stringify(expectedOutputsData)).toBe(JSON.stringify(orderOutputsData))
-    expect(expectedCapacity).toBe(sumOrderCapacity)
+    expect(JSON.stringify(expectedOutputs)).toBe(JSON.stringify(sellerOutputs))
+    expect(JSON.stringify(expectedOutputsData)).toBe(JSON.stringify(sellerOutputsData))
+    expect(expectedCapacity).toBe(sumSellerCapacity)
   })
 })

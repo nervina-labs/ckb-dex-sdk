@@ -11,7 +11,7 @@ export interface JoyIDConfig {
 export enum CKBAsset {
   XUDT,
   SUDT,
-  NFT,
+  SPORE,
 }
 
 interface BaseParams {
@@ -27,6 +27,7 @@ export interface MakerParams extends BaseParams {
   totalValue: bigint
   // The UDT amount to list and it's optional for NFT asset
   listAmount?: bigint
+  // The deserialized string of UDT and NFT(spore NFT, mNFT, CoTA NFT, etc.) type script
   assetType: Hex
 }
 

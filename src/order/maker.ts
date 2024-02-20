@@ -9,11 +9,18 @@ import {
   JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
   CKB_UNIT,
   getSudtDep,
+  getSporeDep,
 } from '../constants'
 import { Hex, SubkeyUnlockReq, MakerParams, MakerResult, CKBAsset } from '../types'
 import { append0x, u128ToLe } from '../utils'
-import { UdtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
-import { calculateEmptyCellMinCapacity, calculateTransactionFee, calculateUdtCellCapacity } from './helper'
+import { AssetException, NoCotaCellException, NoLiveCellException, NFTException } from '../exceptions'
+import {
+  calculateEmptyCellMinCapacity,
+  calculateNFTCellCapacity,
+  calculateTransactionFee,
+  calculateUdtCellCapacity,
+  isUdtAsset,
+} from './helper'
 import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
 
@@ -38,37 +45,40 @@ export const buildMakerTx = async ({
   if (!emptyCells || emptyCells.length === 0) {
     throw new NoLiveCellException('The address has no empty cells')
   }
-  const orderArgs = new OrderArgs(sellerLock, 0, totalValue)
+  const setup = isUdtAsset(ckbAsset) ? 0 : 4
+  const orderArgs = new OrderArgs(sellerLock, setup, totalValue)
   const orderLock: CKBComponents.Script = {
     ...getDexLockScript(isMainnet),
     args: orderArgs.toHex(),
   }
-  const orderCellCapacity = calculateUdtCellCapacity(orderLock, assetTypeScript)
-
   const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
-  const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
-  const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
-  const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
-    emptyCells,
-    orderCellCapacity,
-    txFee,
-    minCellCapacity,
-    errMsg,
-  )
 
   let inputs: CKBComponents.CellInput[] = []
   const outputs: CKBComponents.CellOutput[] = []
   const outputsData: Hex[] = []
   let cellDeps: CKBComponents.CellDep[] = []
   let changeCapacity = BigInt(0)
+  let orderCellCapacity = BigInt(0)
 
-  if (ckbAsset === CKBAsset.XUDT || ckbAsset === CKBAsset.SUDT) {
+  // Build UDT transaction
+  if (isUdtAsset(ckbAsset)) {
+    orderCellCapacity = calculateUdtCellCapacity(orderLock, assetTypeScript)
+    const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
+    const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
+      emptyCells,
+      orderCellCapacity,
+      txFee,
+      minCellCapacity,
+      errMsg,
+    )
+
     const udtCells = await collector.getCells({
       lock: sellerLock,
       type: assetTypeScript,
     })
     if (!udtCells || udtCells.length === 0) {
-      throw new UdtException('The address has no UDT cells')
+      throw new AssetException('The address has no UDT cells')
     }
     const { inputs: udtInputs, capacity: udtInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
     inputs = [...emptyInputs, ...udtInputs]
@@ -98,6 +108,43 @@ export const buildMakerTx = async ({
     outputsData.push('0x')
 
     cellDeps.push(ckbAsset === CKBAsset.XUDT ? getXudtDep(isMainnet) : getSudtDep(isMainnet))
+    // Build NFT(Spore) transaction
+  } else {
+    const nftCells = await collector.getCells({
+      lock: sellerLock,
+      type: assetTypeScript,
+    })
+    if (!nftCells || nftCells.length === 0) {
+      throw new NFTException('The address has no NFT cells')
+    }
+    const nftCell = nftCells[0]
+    const nftInputCapacity = BigInt(nftCell.output.capacity)
+    orderCellCapacity = calculateNFTCellCapacity(orderLock, nftCell)
+    const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
+    const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
+      emptyCells,
+      orderCellCapacity,
+      txFee,
+      minCellCapacity,
+      errMsg,
+    )
+    const nftInput: CKBComponents.CellInput = {
+      previousOutput: nftCell.outPoint,
+      since: '0x0',
+    }
+    inputs = [...emptyInputs, nftInput]
+    outputs.push(nftCell.output)
+    outputsData.push(nftCell.outputData)
+
+    changeCapacity = emptyInputsCapacity + nftInputCapacity - orderCellCapacity - txFee
+    outputs.push({
+      lock: sellerLock,
+      capacity: append0x(changeCapacity.toString(16)),
+    })
+    outputsData.push('0x')
+
+    cellDeps.push(getSporeDep(isMainnet))
   }
 
   if (joyID) {

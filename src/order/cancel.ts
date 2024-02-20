@@ -8,15 +8,17 @@ import {
   JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
   CKB_UNIT,
   getSudtDep,
+  getSporeDep,
 } from '../constants'
 import { CKBAsset, CancelParams, Hex, SubkeyUnlockReq, TakerResult } from '../types'
 import { append0x } from '../utils'
-import { UdtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
+import { AssetException, NoCotaCellException, NoLiveCellException } from '../exceptions'
 import {
   calculateEmptyCellMinCapacity,
   calculateTransactionFee,
   cleanUpUdtOutputs as cleanUpUdtOutputs,
   deserializeOutPoints,
+  isUdtAsset,
 } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
@@ -48,14 +50,14 @@ export const buildCancelTx = async ({
   for await (const outPoint of outPoints) {
     const cell = await collector.getLiveCell(outPoint)
     if (!cell) {
-      throw new UdtException('The udt cell specified by the out point has been spent')
+      throw new AssetException('The asset cell specified by the out point has been spent')
     }
     const orderArgs = OrderArgs.fromHex(cell.output.lock.args)
     if (serializeScript(orderArgs.ownerLock) !== serializeScript(sellerLock)) {
-      throw new UdtException('The udt cell does not belong to the seller address')
+      throw new AssetException('The asset cell does not belong to the seller address')
     }
     if (!cell.output.type || !cell.data) {
-      throw new UdtException('The udt cell specified by the out point must have type script')
+      throw new AssetException('The asset cell specified by the out point must have type script')
     }
     orderInputsCapacity += BigInt(cell.output.capacity)
     orderCells.push(cell)
@@ -71,7 +73,7 @@ export const buildCancelTx = async ({
     previousOutput: outPoint,
     since: '0x0',
   }))
-  if (ckbAsset === CKBAsset.XUDT || ckbAsset === CKBAsset.SUDT) {
+  if (isUdtAsset(ckbAsset)) {
     const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, sellerLock)
 
     const outputs = udtOutputs
@@ -98,6 +100,38 @@ export const buildCancelTx = async ({
     outputsData.push('0x')
 
     cellDeps.push(ckbAsset === CKBAsset.XUDT ? getXudtDep(isMainnet) : getSudtDep(isMainnet))
+  } else {
+    let sumNftCapacity = BigInt(0)
+    for (const orderCell of orderCells) {
+      outputs.push({
+        ...orderCell.output,
+        lock: sellerLock,
+      })
+      sumNftCapacity += BigInt(orderCell.output.capacity)
+      outputsData.push(orderCell.data?.content!)
+    }
+
+    const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
+    const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const errMsg = `At least ${needCKB} free CKB (refundable) is required to cancel the sell order.`
+    const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
+      emptyCells,
+      minCellCapacity,
+      txFee,
+      minCellCapacity,
+      errMsg,
+    )
+    inputs = [...orderInputs, ...emptyInputs]
+
+    const changeCapacity = inputsCapacity + orderInputsCapacity - sumNftCapacity - txFee
+    const changeOutput: CKBComponents.CellOutput = {
+      lock: sellerLock,
+      capacity: append0x(changeCapacity.toString(16)),
+    }
+    outputs.push(changeOutput)
+    outputsData.push('0x')
+
+    cellDeps.push(getSporeDep(isMainnet))
   }
 
   if (joyID) {
