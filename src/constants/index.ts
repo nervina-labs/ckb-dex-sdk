@@ -79,7 +79,7 @@ const TestnetInfo = {
 
   SporeTypeScript: {
     codeHash: '0x5e063b4c0e7abeaa6a428df3b693521a3050934cf3b0ae97a800d1bc31449398',
-    hashType: 'type',
+    hashType: 'data1',
     args: '',
   } as CKBComponents.Script,
 
@@ -165,7 +165,7 @@ const MainnetInfo = {
 
   SporeTypeScript: {
     codeHash: '0x4a4dce1df3dffff7f8b2cd7dff7303df3b6150c9788cb75dcf6747247132b9f5',
-    hashType: 'type',
+    hashType: 'data1',
     args: '',
   } as CKBComponents.Script,
 

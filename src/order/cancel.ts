@@ -15,9 +15,11 @@ import { append0x } from '../utils'
 import { AssetException, NoCotaCellException, NoLiveCellException } from '../exceptions'
 import {
   calculateEmptyCellMinCapacity,
+  calculateNFTCellCapacity,
   calculateTransactionFee,
   cleanUpUdtOutputs as cleanUpUdtOutputs,
   deserializeOutPoints,
+  generateSporeCoBuild,
   isUdtAsset,
 } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
@@ -63,21 +65,23 @@ export const buildCancelTx = async ({
     orderCells.push(cell)
   }
 
-  let inputs: CKBComponents.CellInput[] = []
-  const outputs: CKBComponents.CellOutput[] = []
-  const outputsData: Hex[] = []
-  let cellDeps: CKBComponents.CellDep[] = [getDexCellDep(isMainnet)]
-  let changeCapacity = BigInt(0)
-
   const orderInputs: CKBComponents.CellInput[] = outPoints.map(outPoint => ({
     previousOutput: outPoint,
     since: '0x0',
   }))
+
+  let inputs: CKBComponents.CellInput[] = []
+  let outputs: CKBComponents.CellOutput[] = []
+  let outputsData: Hex[] = []
+  let cellDeps: CKBComponents.CellDep[] = [getDexCellDep(isMainnet)]
+  let changeCapacity = BigInt(0)
+  let sporeCoBuild = '0x'
+
   if (isUdtAsset(ckbAsset)) {
     const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, sellerLock)
 
-    const outputs = udtOutputs
-    const outputsData = udtOutputsData
+    outputs = udtOutputs
+    outputsData = udtOutputsData
 
     const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
     const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
@@ -91,7 +95,7 @@ export const buildCancelTx = async ({
     )
     inputs = [...orderInputs, ...emptyInputs]
 
-    const changeCapacity = inputsCapacity + orderInputsCapacity - sumUdtCapacity - txFee
+    changeCapacity = inputsCapacity + orderInputsCapacity - sumUdtCapacity - txFee
     const changeOutput: CKBComponents.CellOutput = {
       lock: sellerLock,
       capacity: append0x(changeCapacity.toString(16)),
@@ -103,12 +107,18 @@ export const buildCancelTx = async ({
   } else {
     let sumNftCapacity = BigInt(0)
     for (const orderCell of orderCells) {
+      const minNFTCapacity = calculateNFTCellCapacity(sellerLock, orderCell)
       outputs.push({
         ...orderCell.output,
         lock: sellerLock,
+        capacity: append0x(minNFTCapacity.toString(16)),
       })
-      sumNftCapacity += BigInt(orderCell.output.capacity)
+      sumNftCapacity += minNFTCapacity
       outputsData.push(orderCell.data?.content!)
+    }
+
+    if (ckbAsset === CKBAsset.SPORE) {
+      sporeCoBuild = generateSporeCoBuild(orderCells, outputs)
     }
 
     const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
@@ -123,7 +133,7 @@ export const buildCancelTx = async ({
     )
     inputs = [...orderInputs, ...emptyInputs]
 
-    const changeCapacity = inputsCapacity + orderInputsCapacity - sumNftCapacity - txFee
+    changeCapacity = inputsCapacity + orderInputsCapacity - sumNftCapacity - txFee
     const changeOutput: CKBComponents.CellOutput = {
       lock: sellerLock,
       capacity: append0x(changeCapacity.toString(16)),
@@ -140,6 +150,9 @@ export const buildCancelTx = async ({
 
   const emptyWitness = { lock: '', inputType: '', outputType: '' }
   const witnesses = inputs.map((_, index) => (index === orderInputs.length ? serializeWitnessArgs(emptyWitness) : '0x'))
+  if (ckbAsset === CKBAsset.SPORE) {
+    witnesses.push(sporeCoBuild)
+  }
   if (joyID && joyID.connectData.keyType === 'sub_key') {
     const pubkeyHash = append0x(blake160(append0x(joyID.connectData.pubkey), 'hex'))
     const req: SubkeyUnlockReq = {

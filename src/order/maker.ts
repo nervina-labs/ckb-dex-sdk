@@ -19,6 +19,7 @@ import {
   calculateNFTCellCapacity,
   calculateTransactionFee,
   calculateUdtCellCapacity,
+  generateSporeCoBuild,
   isUdtAsset,
 } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
@@ -54,11 +55,12 @@ export const buildMakerTx = async ({
   const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
 
   let inputs: CKBComponents.CellInput[] = []
-  const outputs: CKBComponents.CellOutput[] = []
-  const outputsData: Hex[] = []
+  let outputs: CKBComponents.CellOutput[] = []
+  let outputsData: Hex[] = []
   let cellDeps: CKBComponents.CellDep[] = []
   let changeCapacity = BigInt(0)
   let orderCellCapacity = BigInt(0)
+  let sporeCoBuild = '0x'
 
   // Build UDT transaction
   if (isUdtAsset(ckbAsset)) {
@@ -118,8 +120,9 @@ export const buildMakerTx = async ({
       throw new NFTException('The address has no NFT cells')
     }
     const nftCell = nftCells[0]
-    const nftInputCapacity = BigInt(nftCell.output.capacity)
     orderCellCapacity = calculateNFTCellCapacity(orderLock, nftCell)
+
+    const nftInputCapacity = BigInt(nftCell.output.capacity)
     const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
     const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
@@ -134,7 +137,12 @@ export const buildMakerTx = async ({
       since: '0x0',
     }
     inputs = [...emptyInputs, nftInput]
-    outputs.push(nftCell.output)
+    const orderOutput = {
+      lock: orderLock,
+      capacity: append0x(orderCellCapacity.toString(16)),
+      type: nftCell.output.type,
+    }
+    outputs.push(orderOutput)
     outputsData.push(nftCell.outputData)
 
     changeCapacity = emptyInputsCapacity + nftInputCapacity - orderCellCapacity - txFee
@@ -145,6 +153,10 @@ export const buildMakerTx = async ({
     outputsData.push('0x')
 
     cellDeps.push(getSporeDep(isMainnet))
+
+    if (ckbAsset === CKBAsset.SPORE) {
+      sporeCoBuild = generateSporeCoBuild([nftCell], [orderOutput])
+    }
   }
 
   if (joyID) {
@@ -152,7 +164,10 @@ export const buildMakerTx = async ({
   }
 
   const emptyWitness = { lock: '', inputType: '', outputType: '' }
-  let witnesses = [serializeWitnessArgs(emptyWitness)]
+  let witnesses = inputs.map((_, index) => (index === 0 ? serializeWitnessArgs(emptyWitness) : '0x'))
+  if (ckbAsset === CKBAsset.SPORE) {
+    witnesses.push(sporeCoBuild)
+  }
   if (joyID && joyID.connectData.keyType === 'sub_key') {
     const pubkeyHash = append0x(blake160(append0x(joyID.connectData.pubkey), 'hex'))
     const req: SubkeyUnlockReq = {

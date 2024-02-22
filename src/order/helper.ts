@@ -1,11 +1,13 @@
 import BigNumber from 'bignumber.js'
+import { assembleTransferSporeAction, assembleCobuildWitnessLayout } from '@spore-sdk/core/lib/cobuild'
 import { CKB_UNIT } from '../constants'
 import { append0x, leToU128, remove0x, u128ToLe } from '../utils'
 import { CKBAsset, Hex, IndexerCell } from '../types'
-import { blockchain } from '@ckb-lumos/base'
+import { blockchain, Cell as LumosCell } from '@ckb-lumos/base'
 import { serializeScript } from '@nervosnetwork/ckb-sdk-utils'
 
 // minimum occupied capacity and 1 ckb for transaction fee
+// assume UDT cell data size is 16bytes
 export const calculateUdtCellCapacity = (lock: CKBComponents.Script, udtType: CKBComponents.Script): bigint => {
   const lockArgsSize = remove0x(lock.args).length / 2
   const typeArgsSize = remove0x(udtType.args).length / 2
@@ -81,4 +83,29 @@ export const cleanUpUdtOutputs = (orderCells: CKBComponents.LiveCell[], lock: CK
 
 export const isUdtAsset = (asset: CKBAsset) => {
   return asset === CKBAsset.XUDT || asset === CKBAsset.SUDT
+}
+
+export const generateSporeCoBuild = (
+  sporeCells: IndexerCell[] | CKBComponents.LiveCell[],
+  outputCells: CKBComponents.CellOutput[],
+): string => {
+  if (sporeCells.length !== outputCells.length) {
+    throw new Error('The length of spore input cells length and spore output cells are not same')
+  }
+  let sporeActions: any[] = []
+  for (let index = 0; index < sporeCells.length; index++) {
+    const sporeCell = sporeCells[index]
+    const outputData = 'outputData' in sporeCell ? sporeCell.outputData : sporeCell.data?.content!
+    const sporeInput = {
+      cellOutput: sporeCells[index].output,
+      data: outputData,
+    } as LumosCell
+    const sporeOutput = {
+      cellOutput: outputCells[index],
+      data: outputData,
+    } as LumosCell
+    const { actions } = assembleTransferSporeAction(sporeInput, sporeOutput)
+    sporeActions = sporeActions.concat(actions)
+  }
+  return assembleCobuildWitnessLayout(sporeActions)
 }

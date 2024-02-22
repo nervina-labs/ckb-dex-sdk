@@ -20,6 +20,7 @@ import {
   cleanUpUdtOutputs,
   isUdtAsset,
   calculateNFTCellCapacity,
+  generateSporeCoBuild,
 } from './helper'
 import { OrderArgs } from './orderArgs'
 import { CKBTransaction } from '@joyid/ckb'
@@ -119,6 +120,7 @@ export const buildTakerTx = async ({
   let outputsData: Hex[] = []
   let cellDeps: CKBComponents.CellDep[] = [getDexCellDep(isMainnet)]
   let changeCapacity = BigInt(0)
+  let sporeCoBuild = '0x'
 
   if (isUdtAsset(ckbAsset)) {
     const { sellerOutputs, sellerOutputsData, sumSellerCapacity } = matchOrderOutputs(orderCells)
@@ -167,6 +169,12 @@ export const buildTakerTx = async ({
     )
     inputs = [...orderInputs, ...emptyInputs]
 
+    if (ckbAsset === CKBAsset.SPORE) {
+      const sporeOutputs = requiredOutputs.slice(orderCells.length)
+      console.log(JSON.stringify(sporeOutputs))
+      sporeCoBuild = generateSporeCoBuild(orderCells, sporeOutputs)
+    }
+
     changeCapacity = inputsCapacity - sumRequiredOutputsCapacity - txFee
     const changeOutput: CKBComponents.CellOutput = {
       lock: buyerLock,
@@ -184,6 +192,9 @@ export const buildTakerTx = async ({
 
   const emptyWitness = { lock: '', inputType: '', outputType: '' }
   const witnesses = inputs.map((_, index) => (index === orderInputs.length ? serializeWitnessArgs(emptyWitness) : '0x'))
+  if (ckbAsset === CKBAsset.SPORE) {
+    witnesses.push(sporeCoBuild)
+  }
   if (joyID && joyID.connectData.keyType === 'sub_key') {
     const pubkeyHash = append0x(blake160(append0x(joyID.connectData.pubkey), 'hex'))
     const req: SubkeyUnlockReq = {
