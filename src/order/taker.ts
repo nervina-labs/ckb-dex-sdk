@@ -127,8 +127,8 @@ export const buildTakerTx = async ({
     const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, buyerLock)
 
     const needInputsCapacity = sumSellerCapacity + sumUdtCapacity
-    const outputs = [...sellerOutputs, ...udtOutputs]
-    const outputsData = [...sellerOutputsData, ...udtOutputsData]
+    outputs = [...sellerOutputs, ...udtOutputs]
+    outputsData = [...sellerOutputsData, ...udtOutputsData]
 
     const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
     const needCKB = ((needInputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
