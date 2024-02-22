@@ -3,12 +3,12 @@ import { Collector } from '../src/collector'
 import { addressFromP256PrivateKey, keyFromP256Private } from '../src/utils'
 import { Aggregator } from '../src/aggregator'
 import { ConnectResponseData } from '@joyid/ckb'
-import { JoyIDConfig } from '../src/types'
+import { CKBAsset, JoyIDConfig } from '../src/types'
 import { buildTakerTx } from '../src/order'
 import { signSecp256r1Tx } from './secp256r1'
 
 // SECP256R1 private key
-const BUYER_MAIN_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000002'
+const BUYER_MAIN_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001'
 
 const taker = async () => {
   const collector = new Collector({
@@ -37,15 +37,7 @@ const taker = async () => {
 
   const orderOutPoints: CKBComponents.OutPoint[] = [
     {
-      txHash: '0xa0e395792cbd70d071fe7256c4206daaa35fe6e6733d772c8af716677705691b',
-      index: '0x0',
-    },
-    {
-      txHash: '0x367fe70ddaef9d89a120a9fc2297c5861640210736138693087b20f625edeed6',
-      index: '0x0',
-    },
-    {
-      txHash: '0x882e62e0c40cbd411d2c0eda7cdc4d793cd7bc33012b9ad7b3a2db34abce483f',
+      txHash: '0xf37c614c31b4d2d34fb71b0a0b8dc4e797151bdee36fc25446a682326a77242f',
       index: '0x0',
     },
   ]
@@ -55,6 +47,7 @@ const taker = async () => {
     joyID,
     buyer,
     orderOutPoints: orderOutPoints.map(serializeOutPoint),
+    ckbAsset: CKBAsset.SPORE,
   })
 
   const key = keyFromP256Private(BUYER_MAIN_PRIVATE_KEY)
