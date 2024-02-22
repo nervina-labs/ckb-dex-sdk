@@ -1,9 +1,9 @@
 import axios from 'axios'
 import CKB from '@nervosnetwork/ckb-sdk-core'
 import { toCamelcase } from '../utils/case-parser'
-import { IndexerCell, CollectResult, IndexerCapacity, CollectXudtResult } from '../types/collector'
-import { CKB_UNIT, MIN_CAPACITY } from '../constants'
-import { CapacityNotEnoughException, IndexerException, XudtAmountNotEnoughException } from '../exceptions'
+import { IndexerCell, CollectResult, IndexerCapacity, CollectUdtResult as CollectUdtResult } from '../types/collector'
+import { MIN_CAPACITY } from '../constants'
+import { CapacityNotEnoughException, IndexerException, UdtAmountNotEnoughException } from '../exceptions'
 import { leToU128 } from '../utils'
 
 export class Collector {
@@ -141,7 +141,7 @@ export class Collector {
     return { inputs, capacity: sum }
   }
 
-  collectXudtInputs(liveCells: IndexerCell[], needAmount: bigint): CollectXudtResult {
+  collectUdtInputs(liveCells: IndexerCell[], needAmount: bigint): CollectUdtResult {
     let inputs: CKBComponents.CellInput[] = []
     let sumCapacity = BigInt(0)
     let sumAmount = BigInt(0)
@@ -160,7 +160,7 @@ export class Collector {
       }
     }
     if (sumAmount < needAmount) {
-      throw new XudtAmountNotEnoughException('Insufficient Xudt balance')
+      throw new UdtAmountNotEnoughException('Insufficient UDT balance')
     }
     return { inputs, capacity: sumCapacity, amount: sumAmount }
   }

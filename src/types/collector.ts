@@ -21,7 +21,7 @@ export interface CollectResult {
   capacity: Capacity
 }
 
-export interface CollectXudtResult extends CollectResult {
+export interface CollectUdtResult extends CollectResult {
   amount: bigint
 }
 

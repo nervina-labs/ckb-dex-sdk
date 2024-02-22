@@ -62,6 +62,34 @@ const TestnetInfo = {
     },
     depType: 'code',
   } as CKBComponents.CellDep,
+
+  SUDTTypeScript: {
+    codeHash: '0xc5e5dcf215925f7ef4dfaf5f4b4f105bc321c02776d6e7d52a1db3fcd9d011a4',
+    hashType: 'type',
+    args: '',
+  } as CKBComponents.Script,
+
+  SUDTTypeDep: {
+    outPoint: {
+      txHash: '0xe12877ebd2c3c364dc46c5c992bcfaf4fee33fa13eebdf82c591fc9825aab769',
+      index: '0x0',
+    },
+    depType: 'code',
+  } as CKBComponents.CellDep,
+
+  SporeTypeScript: {
+    codeHash: '0x5e063b4c0e7abeaa6a428df3b693521a3050934cf3b0ae97a800d1bc31449398',
+    hashType: 'data1',
+    args: '',
+  } as CKBComponents.Script,
+
+  SporeTypeDep: {
+    outPoint: {
+      txHash: '0x06995b9fc19461a2bf9933e57b69af47a20bf0a5bc6c0ffcb85567a2c733f0a1',
+      index: '0x0',
+    },
+    depType: 'code',
+  } as CKBComponents.CellDep,
 }
 
 const MainnetInfo = {
@@ -120,6 +148,34 @@ const MainnetInfo = {
     },
     depType: 'code',
   } as CKBComponents.CellDep,
+
+  SUDTTypeScript: {
+    codeHash: '0x5e7a36a77e68eecc013dfa2fe6a23f3b6c344b04005808694ae6dd45eea4cfd5',
+    hashType: 'type',
+    args: '',
+  } as CKBComponents.Script,
+
+  SUDTTypeDep: {
+    outPoint: {
+      txHash: '0xc7813f6a415144643970c2e88e0bb6ca6a8edc5dd7c1022746f628284a9936d5',
+      index: '0x0',
+    },
+    depType: 'code',
+  } as CKBComponents.CellDep,
+
+  SporeTypeScript: {
+    codeHash: '0x4a4dce1df3dffff7f8b2cd7dff7303df3b6150c9788cb75dcf6747247132b9f5',
+    hashType: 'data1',
+    args: '',
+  } as CKBComponents.Script,
+
+  SporeTypeDep: {
+    outPoint: {
+      txHash: '0x96b198fb5ddbd1eed57ed667068f1f1e55d07907b4c0dbd38675a69ea1b69824',
+      index: '0x0',
+    },
+    depType: 'code',
+  } as CKBComponents.CellDep,
 }
 
 export const getJoyIDLockScript = (isMainnet = false) => (isMainnet ? MainnetInfo.JoyIDLockScript : TestnetInfo.JoyIDLockScript)
@@ -133,3 +189,9 @@ export const getDexCellDep = (isMainnet = false) => (isMainnet ? MainnetInfo.Dex
 
 export const getXudtTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.XUDTTypeScript : TestnetInfo.XUDTTypeScript)
 export const getXudtDep = (isMainnet = false) => (isMainnet ? MainnetInfo.XUDTTypeDep : TestnetInfo.XUDTTypeDep)
+
+export const getSudtTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.SUDTTypeScript : TestnetInfo.SUDTTypeScript)
+export const getSudtDep = (isMainnet = false) => (isMainnet ? MainnetInfo.SUDTTypeDep : TestnetInfo.SUDTTypeDep)
+
+export const getSporeTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.SporeTypeScript : TestnetInfo.SporeTypeScript)
+export const getSporeDep = (isMainnet = false) => (isMainnet ? MainnetInfo.SporeTypeDep : TestnetInfo.SporeTypeDep)

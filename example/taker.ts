@@ -60,10 +60,8 @@ const taker = async () => {
   const key = keyFromP256Private(BUYER_MAIN_PRIVATE_KEY)
   const signedTx = signSecp256r1Tx(key, rawTx, witnessIndex)
 
-  console.log(JSON.stringify(signedTx))
-
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
-  console.info(`The taker of xudt asset has been finished with tx hash: ${txHash}`)
+  console.info(`The taker of udt asset has been finished with tx hash: ${txHash}`)
 }
 
 taker()

@@ -7,15 +7,32 @@ import {
   MAX_FEE,
   JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
   CKB_UNIT,
+  getSudtDep,
+  getSporeDep,
 } from '../constants'
-import { CancelParams, SubkeyUnlockReq, TakerResult } from '../types'
+import { CKBAsset, CancelParams, Hex, SubkeyUnlockReq, TakerResult } from '../types'
 import { append0x } from '../utils'
-import { XudtException, NoCotaCellException, NoLiveCellException } from '../exceptions'
-import { calculateEmptyCellMinCapacity, calculateTransactionFee, cleanUpXudtOutputs, deserializeOutPoints } from './helper'
+import { AssetException, NoCotaCellException, NoLiveCellException } from '../exceptions'
+import {
+  calculateEmptyCellMinCapacity,
+  calculateNFTCellCapacity,
+  calculateTransactionFee,
+  cleanUpUdtOutputs as cleanUpUdtOutputs,
+  deserializeOutPoints,
+  generateSporeCoBuild,
+  isUdtAsset,
+} from './helper'
 import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
 
-export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, fee }: CancelParams): Promise<TakerResult> => {
+export const buildCancelTx = async ({
+  collector,
+  joyID,
+  seller,
+  orderOutPoints,
+  fee,
+  ckbAsset = CKBAsset.XUDT,
+}: CancelParams): Promise<TakerResult> => {
   let txFee = fee ?? MAX_FEE
   const isMainnet = seller.startsWith('ckb')
   const sellerLock = addressToScript(seller)
@@ -30,60 +47,112 @@ export const buildCancelTx = async ({ collector, joyID, seller, orderOutPoints, 
   const outPoints = deserializeOutPoints(orderOutPoints)
 
   let orderInputsCapacity = BigInt(0)
-  // Fetch xudt order cells with outPoints
+  // Fetch udt order cells with outPoints
   const orderCells: CKBComponents.LiveCell[] = []
   for await (const outPoint of outPoints) {
     const cell = await collector.getLiveCell(outPoint)
     if (!cell) {
-      throw new XudtException('The xudt cell specified by the out point has been spent')
+      throw new AssetException('The asset cell specified by the out point has been spent')
     }
     const orderArgs = OrderArgs.fromHex(cell.output.lock.args)
     if (serializeScript(orderArgs.ownerLock) !== serializeScript(sellerLock)) {
-      throw new XudtException('The xudt cell does not belong to the seller address')
+      throw new AssetException('The asset cell does not belong to the seller address')
     }
     if (!cell.output.type || !cell.data) {
-      throw new XudtException('The xudt cell specified by the out point must have type script')
+      throw new AssetException('The asset cell specified by the out point must have type script')
     }
     orderInputsCapacity += BigInt(cell.output.capacity)
     orderCells.push(cell)
   }
 
-  const { xudtOutputs, xudtOutputsData, sumXudtCapacity } = cleanUpXudtOutputs(orderCells, sellerLock)
-
-  const outputs = xudtOutputs
-  const outputsData = xudtOutputsData
-
-  const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
-  const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
-  const errMsg = `At least ${needCKB} free CKB (refundable) is required to cancel the sell order.`
-  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
-    emptyCells,
-    minCellCapacity,
-    txFee,
-    minCellCapacity,
-    errMsg,
-  )
   const orderInputs: CKBComponents.CellInput[] = outPoints.map(outPoint => ({
     previousOutput: outPoint,
     since: '0x0',
   }))
-  const inputs = [...orderInputs, ...emptyInputs]
 
-  const changeCapacity = inputsCapacity + orderInputsCapacity - sumXudtCapacity - txFee
-  const changeOutput: CKBComponents.CellOutput = {
-    lock: sellerLock,
-    capacity: append0x(changeCapacity.toString(16)),
+  let inputs: CKBComponents.CellInput[] = []
+  let outputs: CKBComponents.CellOutput[] = []
+  let outputsData: Hex[] = []
+  let cellDeps: CKBComponents.CellDep[] = [getDexCellDep(isMainnet)]
+  let changeCapacity = BigInt(0)
+  let sporeCoBuild = '0x'
+
+  if (isUdtAsset(ckbAsset)) {
+    const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, sellerLock)
+
+    outputs = udtOutputs
+    outputsData = udtOutputsData
+
+    const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
+    const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const errMsg = `At least ${needCKB} free CKB (refundable) is required to cancel the sell order.`
+    const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
+      emptyCells,
+      minCellCapacity,
+      txFee,
+      minCellCapacity,
+      errMsg,
+    )
+    inputs = [...orderInputs, ...emptyInputs]
+
+    changeCapacity = inputsCapacity + orderInputsCapacity - sumUdtCapacity - txFee
+    const changeOutput: CKBComponents.CellOutput = {
+      lock: sellerLock,
+      capacity: append0x(changeCapacity.toString(16)),
+    }
+    outputs.push(changeOutput)
+    outputsData.push('0x')
+
+    cellDeps.push(ckbAsset === CKBAsset.XUDT ? getXudtDep(isMainnet) : getSudtDep(isMainnet))
+  } else {
+    let sumNftCapacity = BigInt(0)
+    for (const orderCell of orderCells) {
+      const minNFTCapacity = calculateNFTCellCapacity(sellerLock, orderCell)
+      outputs.push({
+        ...orderCell.output,
+        lock: sellerLock,
+        capacity: append0x(minNFTCapacity.toString(16)),
+      })
+      sumNftCapacity += minNFTCapacity
+      outputsData.push(orderCell.data?.content!)
+    }
+
+    if (ckbAsset === CKBAsset.SPORE) {
+      sporeCoBuild = generateSporeCoBuild(orderCells, outputs)
+    }
+
+    const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
+    const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const errMsg = `At least ${needCKB} free CKB (refundable) is required to cancel the sell order.`
+    const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
+      emptyCells,
+      minCellCapacity,
+      txFee,
+      minCellCapacity,
+      errMsg,
+    )
+    inputs = [...orderInputs, ...emptyInputs]
+
+    changeCapacity = inputsCapacity + orderInputsCapacity - sumNftCapacity - txFee
+    const changeOutput: CKBComponents.CellOutput = {
+      lock: sellerLock,
+      capacity: append0x(changeCapacity.toString(16)),
+    }
+    outputs.push(changeOutput)
+    outputsData.push('0x')
+
+    cellDeps.push(getSporeDep(isMainnet))
   }
-  outputs.push(changeOutput)
-  outputsData.push('0x')
 
-  let cellDeps: CKBComponents.CellDep[] = [getXudtDep(isMainnet), getDexCellDep(isMainnet)]
   if (joyID) {
     cellDeps.push(getJoyIDCellDep(isMainnet))
   }
 
   const emptyWitness = { lock: '', inputType: '', outputType: '' }
   const witnesses = inputs.map((_, index) => (index === orderInputs.length ? serializeWitnessArgs(emptyWitness) : '0x'))
+  if (ckbAsset === CKBAsset.SPORE) {
+    witnesses.push(sporeCoBuild)
+  }
   if (joyID && joyID.connectData.keyType === 'sub_key') {
     const pubkeyHash = append0x(blake160(append0x(joyID.connectData.pubkey), 'hex'))
     const req: SubkeyUnlockReq = {

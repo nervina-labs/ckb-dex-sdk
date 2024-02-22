@@ -3,7 +3,7 @@ import { Collector } from '../src/collector'
 import { addressFromP256PrivateKey, append0x, keyFromP256Private } from '../src/utils'
 import { Aggregator } from '../src/aggregator'
 import { ConnectResponseData } from '@joyid/ckb'
-import { JoyIDConfig } from '../src/types'
+import { CKBAsset, JoyIDConfig } from '../src/types'
 import { buildMakerTx } from '../src/order'
 import { signSecp256r1Tx } from './secp256r1'
 
@@ -36,28 +36,27 @@ const maker = async () => {
     connectData,
   }
 
-  const listAmount = BigInt(500_0000_0000)
   const totalValue = BigInt(800_0000_0000)
-  const xudtType: CKBComponents.Script = {
-    codeHash: '0x25c29dc317811a6f6f3985a7a9ebc4838bd388d19d0feeecf0bcd60f6c0975bb',
-    hashType: 'type',
-    args: '0xaafd7e7eab79726c669d7565888b194dc06bd1dbec16749a721462151e4f1762',
+  const sporeType: CKBComponents.Script = {
+    codeHash: '0x5e063b4c0e7abeaa6a428df3b693521a3050934cf3b0ae97a800d1bc31449398',
+    hashType: 'data1',
+    args: '0x4749dd14a4665d0dc776b900e2e3771f532370b849d7021c346a05ab85e40297',
   }
 
   const { rawTx, listPackage, txFee } = await buildMakerTx({
     collector,
     joyID,
     seller,
-    listAmount,
     totalValue,
-    assetType: append0x(serializeScript(xudtType)),
+    assetType: append0x(serializeScript(sporeType)),
+    ckbAsset: CKBAsset.SPORE,
   })
 
   const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
   const signedTx = signSecp256r1Tx(key, rawTx)
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
-  console.info(`The udt asset has been listed with tx hash: ${txHash}`)
+  console.info(`The Spore asset has been listed with tx hash: ${txHash}`)
 }
 
 maker()

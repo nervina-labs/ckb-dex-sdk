@@ -1,23 +1,22 @@
-import { serializeScript } from '@nervosnetwork/ckb-sdk-utils'
+import { serializeOutPoint } from '@nervosnetwork/ckb-sdk-utils'
 import { Collector } from '../src/collector'
-import { addressFromP256PrivateKey, append0x, keyFromP256Private } from '../src/utils'
+import { addressFromP256PrivateKey, keyFromP256Private } from '../src/utils'
 import { Aggregator } from '../src/aggregator'
 import { ConnectResponseData } from '@joyid/ckb'
-import { JoyIDConfig } from '../src/types'
-import { buildMakerTx } from '../src/order'
+import { CKBAsset, JoyIDConfig } from '../src/types'
+import { buildCancelTx } from '../src/order'
 import { signSecp256r1Tx } from './secp256r1'
 
 // SECP256R1 private key
 const SELLER_MAIN_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001'
 
-const maker = async () => {
+const cancel = async () => {
   const collector = new Collector({
     ckbNodeUrl: 'https://testnet.ckb.dev/rpc',
     ckbIndexerUrl: 'https://testnet.ckb.dev/indexer',
   })
   const seller = addressFromP256PrivateKey(SELLER_MAIN_PRIVATE_KEY)
   // ckt1qrfrwcdnvssswdwpn3s9v8fp87emat306ctjwsm3nmlkjg8qyza2cqgqq98mx5lm42zd7mwyq54pg49cln850mj2957np7az
-  // ckt1qrfrwcdnvssswdwpn3s9v8fp87emat306ctjwsm3nmlkjg8qyza2cqgqqxqyukftmpfang0z2ks6w6syjutass94fujlf09a
   console.log('seller address: ', seller)
 
   const aggregator = new Aggregator('https://cota.nervina.dev/aggregator')
@@ -36,28 +35,28 @@ const maker = async () => {
     connectData,
   }
 
-  const listAmount = BigInt(500_0000_0000)
-  const totalValue = BigInt(800_0000_0000)
-  const xudtType: CKBComponents.Script = {
-    codeHash: '0x25c29dc317811a6f6f3985a7a9ebc4838bd388d19d0feeecf0bcd60f6c0975bb',
-    hashType: 'type',
-    args: '0xaafd7e7eab79726c669d7565888b194dc06bd1dbec16749a721462151e4f1762',
-  }
+  const orderOutPoints: CKBComponents.OutPoint[] = [
+    {
+      txHash: '0x1e618ded1c00458cc6721841b995fb1032ddab6e530d6c4b6d51f69bcf6c6116',
+      index: '0x0',
+    },
+  ]
 
-  const { rawTx, listPackage, txFee } = await buildMakerTx({
+  const { rawTx, txFee, witnessIndex } = await buildCancelTx({
     collector,
     joyID,
     seller,
-    listAmount,
-    totalValue,
-    assetType: append0x(serializeScript(xudtType)),
+    orderOutPoints: orderOutPoints.map(serializeOutPoint),
+    ckbAsset: CKBAsset.SPORE,
   })
 
+  // console.log(JSON.stringify(rawTx))
+
   const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
-  const signedTx = signSecp256r1Tx(key, rawTx)
+  const signedTx = signSecp256r1Tx(key, rawTx, witnessIndex)
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
-  console.info(`The udt asset has been listed with tx hash: ${txHash}`)
+  console.info(`The udt asset has been cancelled with tx hash: ${txHash}`)
 }
 
-maker()
+cancel()
