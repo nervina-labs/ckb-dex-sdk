@@ -12,7 +12,7 @@ import {
   getSporeDep,
 } from '../constants'
 import { Hex, SubkeyUnlockReq, MakerParams, MakerResult, CKBAsset } from '../types'
-import { append0x, u128ToLe } from '../utils'
+import { append0x, remove0x, u128ToLe } from '../utils'
 import { AssetException, NoCotaCellException, NoLiveCellException, NFTException } from '../exceptions'
 import {
   calculateEmptyCellMinCapacity,
@@ -24,6 +24,22 @@ import {
 } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
+
+export const calculateNFTMakerNetworkFee = (seller: string): BigInt => {
+  const sellerLock = addressToScript(seller)
+  const sellerLockArgsSize = remove0x(sellerLock.args).length / 2
+
+  // The setup and totalValue are only used as a placeholder and does not affect the final size calculation.
+  const setup = 4
+  const totalValue = BigInt(0)
+  const orderArgs = new OrderArgs(sellerLock, setup, totalValue)
+  const orderArgsSize = remove0x(orderArgs.toHex()).length / 2
+
+  if (orderArgsSize <= sellerLockArgsSize) {
+    return BigInt(0)
+  }
+  return BigInt(orderArgsSize - sellerLockArgsSize) * CKB_UNIT
+}
 
 export const buildMakerTx = async ({
   collector,

@@ -54,19 +54,18 @@ export const matchNftOrderOutputs = (orderCells: CKBComponents.LiveCell[], buyer
   for (const orderCell of orderCells) {
     const orderArgs = OrderArgs.fromHex(orderCell.output.lock.args)
     sumRequiredOutputsCapacity += orderArgs.totalValue
-    const payCapacity = orderArgs.totalValue + BigInt(append0x(orderCell.output.capacity))
     const output: CKBComponents.CellOutput = {
       lock: orderArgs.ownerLock,
-      capacity: append0x(payCapacity.toString(16)),
+      capacity: append0x(orderArgs.totalValue.toString(16)),
     }
     requiredOutputs.push(output)
     requiredOutputsData.push('0x')
 
-    sumRequiredOutputsCapacity += calculateNFTCellCapacity(buyerLock, orderCell)
+    const buyerNftCapacity = calculateNFTCellCapacity(buyerLock, orderCell)
     buyerOutputs.push({
       lock: buyerLock,
       type: orderCell.output.type,
-      capacity: `0x${calculateNFTCellCapacity(buyerLock, orderCell).toString(16)}`,
+      capacity: `0x${buyerNftCapacity.toString(16)}`,
     })
     buyerOutputsData.push(orderCell.data?.content!)
   }
@@ -171,7 +170,6 @@ export const buildTakerTx = async ({
 
     if (ckbAsset === CKBAsset.SPORE) {
       const sporeOutputs = requiredOutputs.slice(orderCells.length)
-      console.log(JSON.stringify(sporeOutputs))
       sporeCoBuild = generateSporeCoBuild(orderCells, sporeOutputs)
     }
 

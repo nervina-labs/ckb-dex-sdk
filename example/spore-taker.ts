@@ -37,7 +37,11 @@ const taker = async () => {
 
   const orderOutPoints: CKBComponents.OutPoint[] = [
     {
-      txHash: '0xf37c614c31b4d2d34fb71b0a0b8dc4e797151bdee36fc25446a682326a77242f',
+      txHash: '0x24dcaabc5da6e4dc4e4257b425d718507e1f891fb9e26df41e12dbe3d41afe50',
+      index: '0x0',
+    },
+    {
+      txHash: '0x484c581b5697839ac5adc0bf94894f60482f99f86286d9e8b080561435cf1440',
       index: '0x0',
     },
   ]

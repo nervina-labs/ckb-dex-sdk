@@ -40,7 +40,7 @@ const maker = async () => {
   const sporeType: CKBComponents.Script = {
     codeHash: '0x5e063b4c0e7abeaa6a428df3b693521a3050934cf3b0ae97a800d1bc31449398',
     hashType: 'data1',
-    args: '0x4749dd14a4665d0dc776b900e2e3771f532370b849d7021c346a05ab85e40297',
+    args: '0x22a0eb5644badac17316e17660bd5535f32665b806b1cbd243bb1dddbcca3bbd',
   }
 
   const { rawTx, listPackage, txFee } = await buildMakerTx({
