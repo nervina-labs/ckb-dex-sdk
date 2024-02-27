@@ -29,8 +29,8 @@ You can [connect JoyID wallet](https://docs.joyid.dev/guide/ckb/connect) using [
 
 ### Build and Sign transactions
 
-You can use `buildMakerTx`, `buildCancelTx` and `buildTakerTx` methods to place, cancel and take orders with the ConnectResponseData and the methods will generate CKB raw transaction for you to be signed later.
+You can use [`buildMakerTx`](./src/order/maker.ts), [`buildCancelTx`](./src/order/cancel.ts) and [`buildTakerTx`](./src/order/taker.ts) methods to place, cancel and take orders with the ConnectResponseData and the methods will generate CKB raw transaction for you to be signed later.
 
-The examples show how to build FT and NFT maker, taker transactions with JoyID lock and the local test private keys are used to keep simple, please DON'T use the local private keys in your productions.
+The [examples](./example/) show how to build FT and NFT maker, taker transactions with JoyID lock and the local test private keys are for simplicity, please DON'T use the local private keys in your production DApp.
 
-You can call the `signRawTransaction` method to sign the raw tx with JoyID wallet through [@joyid/ckb](https://www.npmjs.com/package/@joyid/ckb) SDK.
+You can call the [`signRawTransaction`](https://docs.joyid.dev/apis/ckb/sign-raw-tx) method to sign the raw tx with JoyID wallet through [@joyid/ckb](https://www.npmjs.com/package/@joyid/ckb) SDK, and you can send the signed transaction through CKB RPC.
