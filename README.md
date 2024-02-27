@@ -7,6 +7,10 @@ CKB DEX SDK is a comprehensive web development kit, which helps developers inter
 
 The SDK provides methods for making orders, taking orders, and canceling orders. Developers can use common lock scripts, such as official secp256k1/blake160 lock, JoyID lock, etc., to interact with the CKB DEX contract.
 
+You can use the DEX to swap fungible tokens([SUDT](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0025-simple-udt/0025-simple-udt.md), [XUDT](https://talk.nervos.org/t/rfc-extensible-udt/5337), etc.) and non-fungible tokens([Spore](https://docs.spore.pro/), [mNFT](https://talk.nervos.org/t/rfc-multi-purpose-nft-draft-spec/5434), etc.) with CKB native asset and JoyID lock is recommended to hold and swap CKB assets.
+
+You can build the maker transactions to transfer FT or NFT assets to DEX lock script whose args contains owner address, price(based on CKB native asset), setup, etc. Anyone can build a taker transaction, as long as the price required in the DEX lock args is met. You can cancel the maker transactions at any time before the taker transactions are executed.
+
 ## Installation
 
 ```
@@ -19,10 +23,14 @@ $ pnpm add @nervina-labs/ckb-dex
 
 ## Development
 
-### Toolchain & utilities
+### Connect the JoyID Wallet
 
-- [@nervina-labs/ckb-dex](https://www.npmjs.com/package/@nervina-labs/ckb-dex) - Provides essential tools for constructing maker, taker and cancel transactions on CKB DEX
+You can [connect JoyID wallet](https://docs.joyid.dev/guide/ckb/connect) using [@joyid/ckb](https://www.npmjs.com/package/@joyid/ckb) SDK `connect` function and then you can get the ConnectResponseData to build maker and taker transactions later.
 
-### Reference
+### Build and Sign transactions
 
-- [Examples](https://github.com/nervina-labs/ckb-dex-sdk/tree/master/example) - Maker, taker, and cancel examples with JoyID lock script
+You can use `buildMakerTx`, `buildCancelTx` and `buildTakerTx` methods to place, cancel and take orders with the ConnectResponseData and the methods will generate CKB raw transaction for you to be signed later.
+
+The examples show how to build FT and NFT maker, taker transactions with JoyID lock and the local test private keys are used to keep simple, please DON'T use the local private keys in your productions.
+
+You can call the `signRawTransaction` method to sign the raw tx with JoyID wallet through [@joyid/ckb](https://www.npmjs.com/package/@joyid/ckb) SDK.

@@ -55,6 +55,10 @@ const maker = async () => {
   const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
   const signedTx = signSecp256r1Tx(key, rawTx)
 
+  // You can call the `signRawTransaction` method to sign the raw tx with JoyID wallet through @joyid/ckb SDK
+  // please make sure the buyer address is the JoyID wallet ckb address
+  // const signedTx = await signRawTransaction(rawTx as CKBTransaction, seller)
+
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
   console.info(`The Spore asset has been listed with tx hash: ${txHash}`)
 }
