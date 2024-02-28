@@ -1,6 +1,6 @@
 {
   "name": "@nervina-labs/ckb-dex",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The JavaScript SDK for CKB DEX",
   "author": "duanyytop <duanyytop@gmail.com>",
   "license": "MIT",
