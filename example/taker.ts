@@ -35,7 +35,7 @@ const taker = async () => {
     connectData,
   }
 
-  const orderOutPoints: CKBComponents.OutPoint[] = [
+  const xudtOrderOutPoints: CKBComponents.OutPoint[] = [
     {
       txHash: '0xa0e395792cbd70d071fe7256c4206daaa35fe6e6733d772c8af716677705691b',
       index: '0x0',
@@ -54,7 +54,7 @@ const taker = async () => {
     collector,
     joyID,
     buyer,
-    orderOutPoints: orderOutPoints.map(serializeOutPoint),
+    orderOutPoints: xudtOrderOutPoints.map(serializeOutPoint),
   })
 
   const key = keyFromP256Private(BUYER_MAIN_PRIVATE_KEY)

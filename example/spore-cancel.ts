@@ -58,7 +58,7 @@ const cancel = async () => {
   // const signedTx = await signRawTransaction(rawTx as CKBTransaction, seller)
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
-  console.info(`The udt asset has been cancelled with tx hash: ${txHash}`)
+  console.info(`The Spore asset has been cancelled with tx hash: ${txHash}`)
 }
 
 cancel()
