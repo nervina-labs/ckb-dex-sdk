@@ -43,7 +43,7 @@ const TestnetInfo = {
 
   DexLockDep: {
     outPoint: {
-      txHash: '0x70accc6114f425fc7cc0b25a8cfc435580b6dc6c529b26ecd36be6056b76661c',
+      txHash: '0xc17040a3723df8f27c344d5e86e254f1d27e1181a5484cb3722416ef09d246ec',
       index: '0x0',
     },
     depType: 'code',
@@ -87,6 +87,20 @@ const TestnetInfo = {
     outPoint: {
       txHash: '0x06995b9fc19461a2bf9933e57b69af47a20bf0a5bc6c0ffcb85567a2c733f0a1',
       index: '0x0',
+    },
+    depType: 'code',
+  } as CKBComponents.CellDep,
+
+  MNftTypeScript: {
+    codeHash: '0xb1837b5ad01a88558731953062d1f5cb547adf89ece01e8934a9f0aeed2d959f',
+    hashType: 'type',
+    args: '',
+  } as CKBComponents.Script,
+
+  MNftTypeDep: {
+    outPoint: {
+      txHash: '0xf11ccb6079c1a4b3d86abe2c574c5db8d2fd3505fdc1d5970b69b31864a4bd1c',
+      index: '0x2',
     },
     depType: 'code',
   } as CKBComponents.CellDep,
@@ -176,6 +190,20 @@ const MainnetInfo = {
     },
     depType: 'code',
   } as CKBComponents.CellDep,
+
+  MNftTypeScript: {
+    codeHash: '0x2b24f0d644ccbdd77bbf86b27c8cca02efa0ad051e447c212636d9ee7acaaec9',
+    hashType: 'type',
+    args: '',
+  } as CKBComponents.Script,
+
+  MNftTypeDep: {
+    outPoint: {
+      txHash: '0x5dce8acab1750d4790059f22284870216db086cb32ba118ee5e08b97dc21d471',
+      index: '0x2',
+    },
+    depType: 'code',
+  } as CKBComponents.CellDep,
 }
 
 export const getJoyIDLockScript = (isMainnet = false) => (isMainnet ? MainnetInfo.JoyIDLockScript : TestnetInfo.JoyIDLockScript)
@@ -195,3 +223,6 @@ export const getSudtDep = (isMainnet = false) => (isMainnet ? MainnetInfo.SUDTTy
 
 export const getSporeTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.SporeTypeScript : TestnetInfo.SporeTypeScript)
 export const getSporeDep = (isMainnet = false) => (isMainnet ? MainnetInfo.SporeTypeDep : TestnetInfo.SporeTypeDep)
+
+export const getMNftTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.MNftTypeScript : TestnetInfo.MNftTypeScript)
+export const getMNftDep = (isMainnet = false) => (isMainnet ? MainnetInfo.MNftTypeDep : TestnetInfo.MNftTypeDep)

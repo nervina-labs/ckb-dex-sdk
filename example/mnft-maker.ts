@@ -39,12 +39,12 @@ const maker = async () => {
 
   // The difference between the capacity occupied by the owner lock and the seller lock and the result may be negative
   const networkFee = calculateNFTMakerNetworkFee(seller)
-  const totalValue = BigInt(800_0000_0000) + networkFee
 
-  const sporeType: CKBComponents.Script = {
-    codeHash: '0x5e063b4c0e7abeaa6a428df3b693521a3050934cf3b0ae97a800d1bc31449398',
-    hashType: 'data1',
-    args: '0x22a0eb5644badac17316e17660bd5535f32665b806b1cbd243bb1dddbcca3bbd',
+  const totalValue = BigInt(800_0000_0000) + networkFee
+  const mNftType: CKBComponents.Script = {
+    codeHash: '0xb1837b5ad01a88558731953062d1f5cb547adf89ece01e8934a9f0aeed2d959f',
+    hashType: 'type',
+    args: '0x3939ecec56db8161b6308c84d6f5f9f12d00d1f00000000100000006',
   }
 
   const { rawTx, listPackage, txFee } = await buildMakerTx({
@@ -53,8 +53,8 @@ const maker = async () => {
     seller,
     // The price whose unit is shannon for CKB native token
     totalValue,
-    assetType: append0x(serializeScript(sporeType)),
-    ckbAsset: CKBAsset.SPORE,
+    assetType: append0x(serializeScript(mNftType)),
+    ckbAsset: CKBAsset.MNFT,
   })
 
   const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
@@ -65,7 +65,7 @@ const maker = async () => {
   // const signedTx = await signRawTransaction(rawTx as CKBTransaction, seller)
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
-  console.info(`The Spore asset has been listed with tx hash: ${txHash}`)
+  console.info(`The mNFT asset has been listed with tx hash: ${txHash}`)
 }
 
 maker()

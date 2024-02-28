@@ -3,7 +3,7 @@ import { Collector } from '../src/collector'
 import { addressFromP256PrivateKey, append0x, keyFromP256Private } from '../src/utils'
 import { Aggregator } from '../src/aggregator'
 import { ConnectResponseData } from '@joyid/ckb'
-import { JoyIDConfig } from '../src/types'
+import { CKBAsset, JoyIDConfig } from '../src/types'
 import { buildMakerTx } from '../src/order'
 import { signSecp256r1Tx } from './secp256r1'
 
@@ -48,13 +48,20 @@ const maker = async () => {
     collector,
     joyID,
     seller,
+    // The UDT amount to list and it's optional for NFT asset
     listAmount,
+    // The price whose unit is shannon for CKB native token
     totalValue,
     assetType: append0x(serializeScript(xudtType)),
+    ckbAsset: CKBAsset.XUDT,
   })
 
   const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
   const signedTx = signSecp256r1Tx(key, rawTx)
+
+  // You can call the `signRawTransaction` method to sign the raw tx with JoyID wallet through @joyid/ckb SDK
+  // please make sure the seller address is the JoyID wallet ckb address
+  // const signedTx = await signRawTransaction(rawTx as CKBTransaction, seller)
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
   console.info(`The udt asset has been listed with tx hash: ${txHash}`)

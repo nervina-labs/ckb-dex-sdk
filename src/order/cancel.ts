@@ -20,6 +20,7 @@ import {
   cleanUpUdtOutputs as cleanUpUdtOutputs,
   deserializeOutPoints,
   generateSporeCoBuild,
+  getAssetCellDep,
   isUdtAsset,
 } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
@@ -102,8 +103,6 @@ export const buildCancelTx = async ({
     }
     outputs.push(changeOutput)
     outputsData.push('0x')
-
-    cellDeps.push(ckbAsset === CKBAsset.XUDT ? getXudtDep(isMainnet) : getSudtDep(isMainnet))
   } else {
     let sumNftCapacity = BigInt(0)
     for (const orderCell of orderCells) {
@@ -140,10 +139,9 @@ export const buildCancelTx = async ({
     }
     outputs.push(changeOutput)
     outputsData.push('0x')
-
-    cellDeps.push(getSporeDep(isMainnet))
   }
 
+  cellDeps.push(getAssetCellDep(ckbAsset, isMainnet))
   if (joyID) {
     cellDeps.push(getJoyIDCellDep(isMainnet))
   }

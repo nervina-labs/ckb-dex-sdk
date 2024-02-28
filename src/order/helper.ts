@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js'
 import { assembleTransferSporeAction, assembleCobuildWitnessLayout } from '@spore-sdk/core/lib/cobuild'
-import { CKB_UNIT } from '../constants'
+import { CKB_UNIT, getMNftDep, getSporeDep, getSudtDep, getXudtDep } from '../constants'
 import { append0x, leToU128, remove0x, u128ToLe } from '../utils'
 import { CKBAsset, Hex, IndexerCell } from '../types'
 import { blockchain, Cell as LumosCell } from '@ckb-lumos/base'
@@ -108,4 +108,19 @@ export const generateSporeCoBuild = (
     sporeActions = sporeActions.concat(actions)
   }
   return assembleCobuildWitnessLayout(sporeActions)
+}
+
+export const getAssetCellDep = (asset: CKBAsset, isMainnet: boolean) => {
+  switch (asset) {
+    case CKBAsset.XUDT:
+      return getXudtDep(isMainnet)
+    case CKBAsset.SUDT:
+      return getSudtDep(isMainnet)
+    case CKBAsset.SPORE:
+      return getSporeDep(isMainnet)
+    case CKBAsset.MNFT:
+      return getMNftDep(isMainnet)
+    default:
+      return getXudtDep(isMainnet)
+  }
 }

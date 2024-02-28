@@ -37,11 +37,7 @@ const taker = async () => {
 
   const orderOutPoints: CKBComponents.OutPoint[] = [
     {
-      txHash: '0x24dcaabc5da6e4dc4e4257b425d718507e1f891fb9e26df41e12dbe3d41afe50',
-      index: '0x0',
-    },
-    {
-      txHash: '0x484c581b5697839ac5adc0bf94894f60482f99f86286d9e8b080561435cf1440',
+      txHash: '0x89f66e8d65e9682703b05cf8f9543487225c00aa4634c210931fbfe56064d381',
       index: '0x0',
     },
   ]
@@ -51,7 +47,7 @@ const taker = async () => {
     joyID,
     buyer,
     orderOutPoints: orderOutPoints.map(serializeOutPoint),
-    ckbAsset: CKBAsset.SPORE,
+    ckbAsset: CKBAsset.MNFT,
   })
 
   const key = keyFromP256Private(BUYER_MAIN_PRIVATE_KEY)
@@ -62,7 +58,7 @@ const taker = async () => {
   // const signedTx = await signRawTransaction(rawTx as CKBTransaction, buyer)
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
-  console.info(`The taker of Spore asset has been finished with tx hash: ${txHash}`)
+  console.info(`The taker of mNFT asset has been finished with tx hash: ${txHash}`)
 }
 
 taker()

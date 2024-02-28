@@ -12,6 +12,7 @@ export enum CKBAsset {
   XUDT,
   SUDT,
   SPORE,
+  MNFT,
 }
 
 interface BaseParams {

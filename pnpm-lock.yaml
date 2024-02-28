@@ -64,6 +64,9 @@ devDependencies:
   babel-eslint:
     specifier: 10.1.0
     version: 10.1.0(eslint@8.56.0)
+  esbuild-runner:
+    specifier: ^2.2.2
+    version: 2.2.2(esbuild@0.19.12)
   eslint:
     specifier: 8.56.0
     version: 8.56.0
@@ -79,9 +82,6 @@ devDependencies:
   prettier:
     specifier: 3.2.4
     version: 3.2.4
-  ts-node:
-    specifier: 10.9.2
-    version: 10.9.2(@types/node@20.11.10)(typescript@5.3.3)
   tslib:
     specifier: 2.6.2
     version: 2.6.2
@@ -462,13 +462,6 @@ packages:
       - encoding
     dev: false
 
-  /@cspotcode/source-map-support@0.8.1:
-    resolution: { integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw== }
-    engines: { node: '>=12' }
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.9
-    dev: true
-
   /@esbuild/aix-ppc64@0.19.12:
     resolution: { integrity: sha512-bmoCYyWdEL3wDQIVbcyzRyeKLgk2WtWLTWz1ZIAZF/EGbNOwSA6ew3PftJ1PqMiOOGu0OyFMzG53L0zqIpPeNA== }
     engines: { node: '>=12' }
@@ -779,13 +772,6 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.15
     dev: true
 
-  /@jridgewell/trace-mapping@0.3.9:
-    resolution: { integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ== }
-    dependencies:
-      '@jridgewell/resolve-uri': 3.1.1
-      '@jridgewell/sourcemap-codec': 1.4.15
-    dev: true
-
   /@nervosnetwork/ckb-sdk-core@0.109.0:
     resolution: { integrity: sha512-c0pMKrZxVG0zRaPOMY+sV7CubW+Fr1YGEj/c3iEZadlXQPeeZ7wdhblG/F4oEtGebRv2lO+F8gTL9FwQlHAXRw== }
     dependencies:
@@ -970,22 +956,6 @@ packages:
     transitivePeerDependencies:
       - encoding
     dev: false
-
-  /@tsconfig/node10@1.0.9:
-    resolution: { integrity: sha512-jNsYVVxU8v5g43Erja32laIDHXeoNvFEpX33OK4d6hljo3jDhCBDhx5dhCCTMWUojscpAagGiRkBKxpdl9fxqA== }
-    dev: true
-
-  /@tsconfig/node12@1.0.11:
-    resolution: { integrity: sha512-cqefuRsh12pWyGsIoBKJA9luFu3mRxCA+ORZvA4ktLSzIuCUtWVxGIuXigEwO5/ywWFMZ2QEGKWvkZG1zDMTag== }
-    dev: true
-
-  /@tsconfig/node14@1.0.3:
-    resolution: { integrity: sha512-ysT8mhdixWK6Hw3i1V2AeRqZ5WfXg1G43mqoYlM2nc6388Fq5jcXyr5mRsqViLx/GJYdoL0bfXD8nmF+Zn/Iow== }
-    dev: true
-
-  /@tsconfig/node16@1.0.4:
-    resolution: { integrity: sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA== }
-    dev: true
 
   /@types/blake2b@2.1.3:
     resolution: { integrity: sha512-MFCdX0MNxFBP/xEILO5Td0kv6nI7+Q2iRWZbTL/yzH2/eDVZS5Wd1LHdsmXClvsCyzqaZfHFzZaN6BUeUCfSDA== }
@@ -1201,10 +1171,6 @@ packages:
     engines: { node: '>=10' }
     dev: true
 
-  /arg@4.1.3:
-    resolution: { integrity: sha512-58S9QDqG0Xx27YwPSt9fJxivjYl432YCwfDMfZ+71RAqUrZef7LrKQZ3LHLOwCS4FLNBplP533Zx895SeOCHvA== }
-    dev: true
-
   /argparse@2.0.1:
     resolution: { integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q== }
     dev: true
@@ -1401,6 +1367,10 @@ packages:
       base-x: 4.0.0
     dev: false
 
+  /buffer-from@1.1.2:
+    resolution: { integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ== }
+    dev: true
+
   /buffer@6.0.3:
     resolution: { integrity: sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA== }
     dependencies:
@@ -1518,10 +1488,6 @@ packages:
       lodash.snakecase: 4.1.1
     dev: false
 
-  /create-require@1.1.1:
-    resolution: { integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ== }
-    dev: true
-
   /cross-fetch@3.1.8:
     resolution: { integrity: sha512-cvA+JwZoU0Xq+h6WkMvAUqPEYy92Obet6UdKLfW60qn99ftItKjB5T+BkyWOFWe2pUyfQ+IJHmpOTznqk1M6Kg== }
     dependencies:
@@ -1603,11 +1569,6 @@ packages:
   /diff-sequences@29.6.3:
     resolution: { integrity: sha512-EjePK1srD3P08o2j4f0ExnylqRs5B9tJjcp9t1krH2qRi8CCdsYfwe9JgSLurFBWwq4uOlipzfk5fHNvwFKr8Q== }
     engines: { node: ^14.15.0 || ^16.10.0 || >=18.0.0 }
-    dev: true
-
-  /diff@4.0.2:
-    resolution: { integrity: sha512-58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A== }
-    engines: { node: '>=0.3.1' }
     dev: true
 
   /dir-glob@3.0.1:
@@ -1710,6 +1671,17 @@ packages:
       is-callable: 1.2.7
       is-date-object: 1.0.5
       is-symbol: 1.0.4
+    dev: true
+
+  /esbuild-runner@2.2.2(esbuild@0.19.12):
+    resolution: { integrity: sha512-fRFVXcmYVmSmtYm2mL8RlUASt2TDkGh3uRcvHFOKNr/T58VrfVeKD9uT9nlgxk96u0LS0ehS/GY7Da/bXWKkhw== }
+    hasBin: true
+    peerDependencies:
+      esbuild: '*'
+    dependencies:
+      esbuild: 0.19.12
+      source-map-support: 0.5.21
+      tslib: 2.4.0
     dev: true
 
   /esbuild@0.19.12:
@@ -2572,10 +2544,6 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.15
     dev: true
 
-  /make-error@1.3.6:
-    resolution: { integrity: sha512-s8UhlNe7vPKomQhC1qFelMokr/Sc3AgNbso3n74mVPA5LTZwkB9NlXf4XPamLxJE8h0gh73rM94xvwRT2CVInw== }
-    dev: true
-
   /map-obj@4.3.0:
     resolution: { integrity: sha512-hdN1wVrZbb29eBGiGjJbeP8JbKjq1urkHJ/LIP/NY48MZ1QVXUsQBV1G1zvYFHn1XE06cwjBsOI2K3Ulnj1YXQ== }
     engines: { node: '>=8' }
@@ -3066,6 +3034,18 @@ packages:
     engines: { node: '>=0.10.0' }
     dev: true
 
+  /source-map-support@0.5.21:
+    resolution: { integrity: sha512-uBHU3L3czsIyYXKX88fdrGovxdSCoTGDRZ6SYXtSRxLZUzHg5P/66Ht6uoUlHu9EZod+inXhKo3qQgwXUT/y1w== }
+    dependencies:
+      buffer-from: 1.1.2
+      source-map: 0.6.1
+    dev: true
+
+  /source-map@0.6.1:
+    resolution: { integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g== }
+    engines: { node: '>=0.10.0' }
+    dev: true
+
   /stackback@0.0.2:
     resolution: { integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw== }
     dev: true
@@ -3197,37 +3177,6 @@ packages:
       typescript: 5.3.3
     dev: true
 
-  /ts-node@10.9.2(@types/node@20.11.10)(typescript@5.3.3):
-    resolution: { integrity: sha512-f0FFpIdcHgn8zcPSbf1dRevwt047YMnaiJM3u2w2RewrB+fob/zePZcrOyQoLMMO7aBIddLcQIEK5dYjkLnGrQ== }
-    hasBin: true
-    peerDependencies:
-      '@swc/core': '>=1.2.50'
-      '@swc/wasm': '>=1.2.50'
-      '@types/node': '*'
-      typescript: '>=2.7'
-    peerDependenciesMeta:
-      '@swc/core':
-        optional: true
-      '@swc/wasm':
-        optional: true
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.9
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 20.11.10
-      acorn: 8.11.3
-      acorn-walk: 8.3.2
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 5.3.3
-      v8-compile-cache-lib: 3.0.1
-      yn: 3.1.1
-    dev: true
-
   /tsconfig-paths@3.15.0:
     resolution: { integrity: sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg== }
     dependencies:
@@ -3240,6 +3189,10 @@ packages:
   /tslib@2.3.1:
     resolution: { integrity: sha512-77EbyPPpMz+FRFRuAFlWMtmgUWGe9UOG2Z25NqCwiIjRhOf5iKGuzSe5P2w1laq+FkRy4p+PCuVkJSGkzTEKVw== }
     dev: false
+
+  /tslib@2.4.0:
+    resolution: { integrity: sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ== }
+    dev: true
 
   /tslib@2.6.2:
     resolution: { integrity: sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q== }
@@ -3338,10 +3291,6 @@ packages:
     resolution: { integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg== }
     hasBin: true
     dev: false
-
-  /v8-compile-cache-lib@3.0.1:
-    resolution: { integrity: sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg== }
-    dev: true
 
   /vite-node@1.2.2(@types/node@20.11.10):
     resolution: { integrity: sha512-1as4rDTgVWJO3n1uHmUYqq7nsFgINQ9u+mRcXpjeOMJUmviqNKjcZB7UfRZrlM7MjYXMKpuWp5oGkjaFLnjawg== }
@@ -3512,11 +3461,6 @@ packages:
 
   /yallist@4.0.0:
     resolution: { integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A== }
-    dev: true
-
-  /yn@3.1.1:
-    resolution: { integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q== }
-    engines: { node: '>=6' }
     dev: true
 
   /yocto-queue@0.1.0:

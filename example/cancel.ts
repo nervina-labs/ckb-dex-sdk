@@ -35,7 +35,7 @@ const cancel = async () => {
     connectData,
   }
 
-  const orderOutPoints: CKBComponents.OutPoint[] = [
+  const xudtOrderOutPoints: CKBComponents.OutPoint[] = [
     {
       txHash: '0x835a283e8371c1e55db27e0e09bf468175b047268ca82609e74ef6ee9e81403c',
       index: '0x0',
@@ -50,11 +50,15 @@ const cancel = async () => {
     collector,
     joyID,
     seller,
-    orderOutPoints: orderOutPoints.map(serializeOutPoint),
+    orderOutPoints: xudtOrderOutPoints.map(serializeOutPoint),
   })
 
   const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
   const signedTx = signSecp256r1Tx(key, rawTx, witnessIndex)
+
+  // You can call the `signRawTransaction` method to sign the raw tx with JoyID wallet through @joyid/ckb SDK
+  // please make sure the seller address is the JoyID wallet ckb address
+  // const signedTx = await signRawTransaction(rawTx as CKBTransaction, seller)
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
   console.info(`The udt asset has been cancelled with tx hash: ${txHash}`)
