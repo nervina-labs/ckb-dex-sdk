@@ -1,15 +1,5 @@
 import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
-import {
-  getCotaTypeScript,
-  getXudtDep,
-  getJoyIDCellDep,
-  getDexCellDep,
-  MAX_FEE,
-  JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
-  CKB_UNIT,
-  getSudtDep,
-  getSporeDep,
-} from '../constants'
+import { getCotaTypeScript, getJoyIDCellDep, getDexCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE, CKB_UNIT } from '../constants'
 import { CKBAsset, Hex, SubkeyUnlockReq, TakerParams, TakerResult } from '../types'
 import { append0x } from '../utils'
 import { AssetException, NoCotaCellException, NoLiveCellException } from '../exceptions'
@@ -21,9 +11,11 @@ import {
   isUdtAsset,
   calculateNFTCellCapacity,
   generateSporeCoBuild,
+  getAssetCellDep,
 } from './helper'
 import { OrderArgs } from './orderArgs'
 import { CKBTransaction } from '@joyid/ckb'
+import { calculateNFTMakerNetworkFee } from './maker'
 
 export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
   const sellerOutputs: CKBComponents.CellOutput[] = []
@@ -44,22 +36,25 @@ export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
   return { sellerOutputs, sellerOutputsData, sumSellerCapacity }
 }
 
-export const matchNftOrderOutputs = (orderCells: CKBComponents.LiveCell[], buyerLock: CKBComponents.Script) => {
-  let requiredOutputs: CKBComponents.CellOutput[] = []
-  let requiredOutputsData: Hex[] = []
-  let sumRequiredOutputsCapacity = BigInt(0)
+export const matchNftOrderCells = (orderCells: CKBComponents.LiveCell[], buyerLock: CKBComponents.Script) => {
+  let dexOutputs: CKBComponents.CellOutput[] = []
+  let dexOutputsData: Hex[] = []
+  let makerNetworkFee = BigInt(0)
+  let dexOutputsCapacity = BigInt(0)
   const buyerOutputs: CKBComponents.CellOutput[] = []
   const buyerOutputsData: Hex[] = []
 
   for (const orderCell of orderCells) {
     const orderArgs = OrderArgs.fromHex(orderCell.output.lock.args)
-    sumRequiredOutputsCapacity += orderArgs.totalValue
+    dexOutputsCapacity += orderArgs.totalValue
     const output: CKBComponents.CellOutput = {
       lock: orderArgs.ownerLock,
       capacity: append0x(orderArgs.totalValue.toString(16)),
     }
-    requiredOutputs.push(output)
-    requiredOutputsData.push('0x')
+    dexOutputs.push(output)
+    dexOutputsData.push('0x')
+
+    makerNetworkFee += calculateNFTMakerNetworkFee(orderArgs.ownerLock)
 
     const buyerNftCapacity = calculateNFTCellCapacity(buyerLock, orderCell)
     buyerOutputs.push({
@@ -69,10 +64,10 @@ export const matchNftOrderOutputs = (orderCells: CKBComponents.LiveCell[], buyer
     })
     buyerOutputsData.push(orderCell.data?.content!)
   }
-  requiredOutputs = requiredOutputs.concat(buyerOutputs)
-  requiredOutputsData = requiredOutputsData.concat(buyerOutputsData)
+  dexOutputs = dexOutputs.concat(buyerOutputs)
+  dexOutputsData = dexOutputsData.concat(buyerOutputsData)
 
-  return { requiredOutputs, requiredOutputsData, sumRequiredOutputsCapacity }
+  return { dexOutputs, dexOutputsData, makerNetworkFee, dexOutputsCapacity }
 }
 
 export const buildTakerTx = async ({
@@ -148,20 +143,18 @@ export const buildTakerTx = async ({
     }
     outputs.push(changeOutput)
     outputsData.push('0x')
-
-    cellDeps.push(ckbAsset === CKBAsset.XUDT ? getXudtDep(isMainnet) : getSudtDep(isMainnet))
   } else {
-    const { requiredOutputs, requiredOutputsData, sumRequiredOutputsCapacity } = matchNftOrderOutputs(orderCells, buyerLock)
+    const { dexOutputs, dexOutputsData, makerNetworkFee, dexOutputsCapacity } = matchNftOrderCells(orderCells, buyerLock)
 
-    outputs = requiredOutputs
-    outputsData = requiredOutputsData
+    outputs = dexOutputs
+    outputsData = dexOutputsData
 
     const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
-    const needCKB = ((sumRequiredOutputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const needCKB = ((dexOutputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB is required to take the order.`
     const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
       emptyCells,
-      sumRequiredOutputsCapacity,
+      dexOutputsCapacity,
       txFee,
       minCellCapacity,
       errMsg,
@@ -169,21 +162,20 @@ export const buildTakerTx = async ({
     inputs = [...orderInputs, ...emptyInputs]
 
     if (ckbAsset === CKBAsset.SPORE) {
-      const sporeOutputs = requiredOutputs.slice(orderCells.length)
+      const sporeOutputs = dexOutputs.slice(orderCells.length)
       sporeCoBuild = generateSporeCoBuild(orderCells, sporeOutputs)
     }
 
-    changeCapacity = inputsCapacity - sumRequiredOutputsCapacity - txFee
+    changeCapacity = inputsCapacity + makerNetworkFee - dexOutputsCapacity - txFee
     const changeOutput: CKBComponents.CellOutput = {
       lock: buyerLock,
       capacity: append0x(changeCapacity.toString(16)),
     }
     outputs.push(changeOutput)
     outputsData.push('0x')
-
-    cellDeps.push(getSporeDep(isMainnet))
   }
 
+  cellDeps.push(getAssetCellDep(ckbAsset, isMainnet))
   if (joyID) {
     cellDeps.push(getJoyIDCellDep(isMainnet))
   }
@@ -192,6 +184,9 @@ export const buildTakerTx = async ({
   const witnesses = inputs.map((_, index) => (index === orderInputs.length ? serializeWitnessArgs(emptyWitness) : '0x'))
   if (ckbAsset === CKBAsset.SPORE) {
     witnesses.push(sporeCoBuild)
+  } else if (ckbAsset === CKBAsset.MNFT) {
+    // MNFT must not be held and transferred by anyone-can-pay lock
+    witnesses[0] = serializeWitnessArgs({ lock: '0x00', inputType: '', outputType: '' })
   }
   if (joyID && joyID.connectData.keyType === 'sub_key') {
     const pubkeyHash = append0x(blake160(append0x(joyID.connectData.pubkey), 'hex'))

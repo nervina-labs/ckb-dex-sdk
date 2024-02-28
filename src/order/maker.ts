@@ -20,13 +20,15 @@ import {
   calculateTransactionFee,
   calculateUdtCellCapacity,
   generateSporeCoBuild,
+  getAssetCellDep,
   isUdtAsset,
 } from './helper'
 import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
 
-export const calculateNFTMakerNetworkFee = (seller: string): BigInt => {
-  const sellerLock = addressToScript(seller)
+// The difference between the capacity occupied by the owner lock and the seller lock and the result may be negative
+export const calculateNFTMakerNetworkFee = (seller: string | CKBComponents.Script): bigint => {
+  const sellerLock = typeof seller === 'string' ? addressToScript(seller) : seller
   const sellerLockArgsSize = remove0x(sellerLock.args).length / 2
 
   // The setup and totalValue are only used as a placeholder and does not affect the final size calculation.
@@ -35,9 +37,6 @@ export const calculateNFTMakerNetworkFee = (seller: string): BigInt => {
   const orderArgs = new OrderArgs(sellerLock, setup, totalValue)
   const orderArgsSize = remove0x(orderArgs.toHex()).length / 2
 
-  if (orderArgsSize <= sellerLockArgsSize) {
-    return BigInt(0)
-  }
   return BigInt(orderArgsSize - sellerLockArgsSize) * CKB_UNIT
 }
 
@@ -78,7 +77,6 @@ export const buildMakerTx = async ({
   let orderCellCapacity = BigInt(0)
   let sporeCoBuild = '0x'
 
-  // Build UDT transaction
   if (isUdtAsset(ckbAsset)) {
     orderCellCapacity = calculateUdtCellCapacity(orderLock, assetTypeScript)
     const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
@@ -124,9 +122,6 @@ export const buildMakerTx = async ({
       capacity: append0x(changeCapacity.toString(16)),
     })
     outputsData.push('0x')
-
-    cellDeps.push(ckbAsset === CKBAsset.XUDT ? getXudtDep(isMainnet) : getSudtDep(isMainnet))
-    // Build NFT(Spore) transaction
   } else {
     const nftCells = await collector.getCells({
       lock: sellerLock,
@@ -168,13 +163,12 @@ export const buildMakerTx = async ({
     })
     outputsData.push('0x')
 
-    cellDeps.push(getSporeDep(isMainnet))
-
     if (ckbAsset === CKBAsset.SPORE) {
       sporeCoBuild = generateSporeCoBuild([nftCell], [orderOutput])
     }
   }
 
+  cellDeps.push(getAssetCellDep(ckbAsset, isMainnet))
   if (joyID) {
     cellDeps.push(getJoyIDCellDep(isMainnet))
   }

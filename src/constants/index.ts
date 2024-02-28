@@ -90,6 +90,20 @@ const TestnetInfo = {
     },
     depType: 'code',
   } as CKBComponents.CellDep,
+
+  MNftTypeScript: {
+    codeHash: '0xb1837b5ad01a88558731953062d1f5cb547adf89ece01e8934a9f0aeed2d959f',
+    hashType: 'type',
+    args: '',
+  } as CKBComponents.Script,
+
+  MNftTypeDep: {
+    outPoint: {
+      txHash: '0xf11ccb6079c1a4b3d86abe2c574c5db8d2fd3505fdc1d5970b69b31864a4bd1c',
+      index: '0x2',
+    },
+    depType: 'code',
+  } as CKBComponents.CellDep,
 }
 
 const MainnetInfo = {
@@ -176,6 +190,20 @@ const MainnetInfo = {
     },
     depType: 'code',
   } as CKBComponents.CellDep,
+
+  MNftTypeScript: {
+    codeHash: '0x2b24f0d644ccbdd77bbf86b27c8cca02efa0ad051e447c212636d9ee7acaaec9',
+    hashType: 'type',
+    args: '',
+  } as CKBComponents.Script,
+
+  MNftTypeDep: {
+    outPoint: {
+      txHash: '0x5dce8acab1750d4790059f22284870216db086cb32ba118ee5e08b97dc21d471',
+      index: '0x2',
+    },
+    depType: 'code',
+  } as CKBComponents.CellDep,
 }
 
 export const getJoyIDLockScript = (isMainnet = false) => (isMainnet ? MainnetInfo.JoyIDLockScript : TestnetInfo.JoyIDLockScript)
@@ -195,3 +223,6 @@ export const getSudtDep = (isMainnet = false) => (isMainnet ? MainnetInfo.SUDTTy
 
 export const getSporeTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.SporeTypeScript : TestnetInfo.SporeTypeScript)
 export const getSporeDep = (isMainnet = false) => (isMainnet ? MainnetInfo.SporeTypeDep : TestnetInfo.SporeTypeDep)
+
+export const getMNftTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.MNftTypeScript : TestnetInfo.MNftTypeScript)
+export const getMNftDep = (isMainnet = false) => (isMainnet ? MainnetInfo.MNftTypeDep : TestnetInfo.MNftTypeDep)
