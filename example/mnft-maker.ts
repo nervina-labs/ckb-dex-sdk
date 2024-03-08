@@ -6,7 +6,7 @@ import { ConnectResponseData } from '@joyid/ckb'
 import { CKBAsset, JoyIDConfig } from '../src/types'
 import { buildMakerTx } from '../src/order'
 import { signSecp256r1Tx } from './secp256r1'
-import { calculateNFTMakerNetworkFee } from '../src/order/maker'
+import { calculateNFTMakerListPackage } from '../src/order/maker'
 
 // SECP256R1 private key
 const SELLER_MAIN_PRIVATE_KEY = '0x0000000000000000000000000000000000000000000000000000000000000001'
@@ -38,16 +38,16 @@ const maker = async () => {
   }
 
   // The difference between the capacity occupied by the owner lock and the seller lock and the result may be negative
-  const networkFee = calculateNFTMakerNetworkFee(seller)
+  const listPackage = calculateNFTMakerListPackage(seller)
 
-  const totalValue = BigInt(800_0000_0000) + networkFee
+  const totalValue = BigInt(800_0000_0000) + listPackage
   const mNftType: CKBComponents.Script = {
     codeHash: '0xb1837b5ad01a88558731953062d1f5cb547adf89ece01e8934a9f0aeed2d959f',
     hashType: 'type',
     args: '0x3939ecec56db8161b6308c84d6f5f9f12d00d1f00000000100000006',
   }
 
-  const { rawTx, listPackage, txFee } = await buildMakerTx({
+  const { rawTx, txFee } = await buildMakerTx({
     collector,
     joyID,
     seller,
