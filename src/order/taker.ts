@@ -15,7 +15,7 @@ import {
 } from './helper'
 import { OrderArgs } from './orderArgs'
 import { CKBTransaction } from '@joyid/ckb'
-import { calculateNFTMakerNetworkFee } from './maker'
+import { calculateNFTMakerListPackage } from './maker'
 
 export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
   const sellerOutputs: CKBComponents.CellOutput[] = []
@@ -54,7 +54,7 @@ export const matchNftOrderCells = (orderCells: CKBComponents.LiveCell[], buyerLo
     dexOutputs.push(output)
     dexOutputsData.push('0x')
 
-    makerNetworkFee += calculateNFTMakerNetworkFee(orderArgs.ownerLock)
+    makerNetworkFee += calculateNFTMakerListPackage(orderArgs.ownerLock)
 
     const buyerNftCapacity = calculateNFTCellCapacity(buyerLock, orderCell)
     buyerOutputs.push({

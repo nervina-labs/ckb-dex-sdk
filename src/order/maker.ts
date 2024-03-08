@@ -27,7 +27,7 @@ import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
 
 // The difference between the capacity occupied by the owner lock and the seller lock and the result may be negative
-export const calculateNFTMakerNetworkFee = (seller: string | CKBComponents.Script): bigint => {
+export const calculateNFTMakerListPackage = (seller: string | CKBComponents.Script): bigint => {
   const sellerLock = typeof seller === 'string' ? addressToScript(seller) : seller
   const sellerLockArgsSize = remove0x(sellerLock.args).length / 2
 
@@ -223,5 +223,7 @@ export const buildMakerTx = async ({
     tx.outputs[tx.outputs.length - 1].capacity = append0x(estimatedChangeCapacity.toString(16))
   }
 
-  return { rawTx: tx as CKBTransaction, txFee, listPackage: orderCellCapacity, witnessIndex: 0 }
+  const listPackage = isUdtAsset(ckbAsset) ? orderCellCapacity : calculateNFTMakerListPackage(seller)
+
+  return { rawTx: tx as CKBTransaction, txFee, listPackage, witnessIndex: 0 }
 }
