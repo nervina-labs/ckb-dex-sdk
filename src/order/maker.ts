@@ -88,11 +88,13 @@ export const buildMakerTx = async ({
     const { inputs: udtInputs, capacity: udtInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
 
     orderCellCapacity = calculateUdtCellCapacity(orderLock, assetTypeScript)
-    const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT - udtInputsCapacity) / CKB_UNIT).toString()
+    const orderNeedCapacity = orderCellCapacity - udtInputsCapacity
+
+    const needCKB = ((orderNeedCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
     const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
       emptyCells,
-      orderCellCapacity,
+      orderNeedCapacity,
       txFee,
       minCellCapacity,
       errMsg,
@@ -107,7 +109,7 @@ export const buildMakerTx = async ({
     })
     outputsData.push(append0x(u128ToLe(listAmount)))
 
-    changeCapacity = emptyInputsCapacity + udtInputsCapacity - orderCellCapacity - txFee
+    changeCapacity = emptyInputsCapacity - orderNeedCapacity - txFee
     if (inputsAmount > listAmount) {
       const udtCellCapacity = calculateUdtCellCapacity(sellerLock, assetTypeScript)
       changeCapacity -= udtCellCapacity
@@ -134,12 +136,13 @@ export const buildMakerTx = async ({
     const nftCell = nftCells[0]
     orderCellCapacity = calculateNFTCellCapacity(orderLock, nftCell)
     const nftInputCapacity = BigInt(nftCell.output.capacity)
+    const orderNeedCapacity = orderCellCapacity - nftInputCapacity
 
-    const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT - nftInputCapacity) / CKB_UNIT).toString()
+    const needCKB = ((orderNeedCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
     const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
       emptyCells,
-      orderCellCapacity,
+      orderNeedCapacity,
       txFee,
       minCellCapacity,
       errMsg,
@@ -157,7 +160,7 @@ export const buildMakerTx = async ({
     outputs.push(orderOutput)
     outputsData.push(nftCell.outputData)
 
-    changeCapacity = emptyInputsCapacity + nftInputCapacity - orderCellCapacity - txFee
+    changeCapacity = emptyInputsCapacity - orderNeedCapacity - txFee
     outputs.push({
       lock: sellerLock,
       capacity: append0x(changeCapacity.toString(16)),
