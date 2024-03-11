@@ -78,8 +78,17 @@ export const buildMakerTx = async ({
   let sporeCoBuild = '0x'
 
   if (isUdtAsset(ckbAsset)) {
+    const udtCells = await collector.getCells({
+      lock: sellerLock,
+      type: assetTypeScript,
+    })
+    if (!udtCells || udtCells.length === 0) {
+      throw new AssetException('The address has no UDT cells')
+    }
+    const { inputs: udtInputs, capacity: udtInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
+
     orderCellCapacity = calculateUdtCellCapacity(orderLock, assetTypeScript)
-    const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT - udtInputsCapacity) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
     const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
       emptyCells,
@@ -89,14 +98,6 @@ export const buildMakerTx = async ({
       errMsg,
     )
 
-    const udtCells = await collector.getCells({
-      lock: sellerLock,
-      type: assetTypeScript,
-    })
-    if (!udtCells || udtCells.length === 0) {
-      throw new AssetException('The address has no UDT cells')
-    }
-    const { inputs: udtInputs, capacity: udtInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
     inputs = [...emptyInputs, ...udtInputs]
 
     outputs.push({
@@ -132,9 +133,9 @@ export const buildMakerTx = async ({
     }
     const nftCell = nftCells[0]
     orderCellCapacity = calculateNFTCellCapacity(orderLock, nftCell)
-
     const nftInputCapacity = BigInt(nftCell.output.capacity)
-    const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+
+    const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT - nftInputCapacity) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
     const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
       emptyCells,
