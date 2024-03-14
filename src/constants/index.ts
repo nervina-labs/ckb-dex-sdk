@@ -136,14 +136,14 @@ const MainnetInfo = {
   } as CKBComponents.CellDep,
 
   DexLockScript: {
-    codeHash: '0x493510d54e815611a643af97b5ac93bfbb45ddc2aae0f2dceffaf3408b4fcfcd',
+    codeHash: '0xab0ede4350a201bd615892044ea9edf12180189572e49a7ff3f78cce179ae09f',
     hashType: 'type',
     args: '',
   } as CKBComponents.Script,
 
   DexLockDep: {
     outPoint: {
-      txHash: '0x9305b2af4567255bfa7df7c9e9ebb531b26ce8b6779ffe01d51416d8bc620613',
+      txHash: '0xaab4fef7338c7108d4d2507c29122768126f9303f173db9f6ef59b9af84186b7',
       index: '0x0',
     },
     depType: 'code',
@@ -206,23 +206,23 @@ const MainnetInfo = {
   } as CKBComponents.CellDep,
 }
 
-export const getJoyIDLockScript = (isMainnet = false) => (isMainnet ? MainnetInfo.JoyIDLockScript : TestnetInfo.JoyIDLockScript)
-export const getJoyIDCellDep = (isMainnet = false) => (isMainnet ? MainnetInfo.JoyIDLockDep : TestnetInfo.JoyIDLockDep)
+export const getJoyIDLockScript = (isMainnet: boolean) => (isMainnet ? MainnetInfo.JoyIDLockScript : TestnetInfo.JoyIDLockScript)
+export const getJoyIDCellDep = (isMainnet: boolean) => (isMainnet ? MainnetInfo.JoyIDLockDep : TestnetInfo.JoyIDLockDep)
 
-export const getCotaTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.CotaTypeScript : TestnetInfo.CotaTypeScript)
-export const getCotaCellDep = (isMainnet = false) => (isMainnet ? MainnetInfo.CotaTypeDep : TestnetInfo.CotaTypeDep)
+export const getCotaTypeScript = (isMainnet: boolean) => (isMainnet ? MainnetInfo.CotaTypeScript : TestnetInfo.CotaTypeScript)
+export const getCotaCellDep = (isMainnet: boolean) => (isMainnet ? MainnetInfo.CotaTypeDep : TestnetInfo.CotaTypeDep)
 
-export const getDexLockScript = (isMainnet = false) => (isMainnet ? MainnetInfo.DexLockScript : TestnetInfo.DexLockScript)
-export const getDexCellDep = (isMainnet = false) => (isMainnet ? MainnetInfo.DexLockDep : TestnetInfo.DexLockDep)
+export const getDexLockScript = (isMainnet: boolean) => (isMainnet ? MainnetInfo.DexLockScript : TestnetInfo.DexLockScript)
+export const getDexCellDep = (isMainnet: boolean) => (isMainnet ? MainnetInfo.DexLockDep : TestnetInfo.DexLockDep)
 
-export const getXudtTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.XUDTTypeScript : TestnetInfo.XUDTTypeScript)
-export const getXudtDep = (isMainnet = false) => (isMainnet ? MainnetInfo.XUDTTypeDep : TestnetInfo.XUDTTypeDep)
+export const getXudtTypeScript = (isMainnet: boolean) => (isMainnet ? MainnetInfo.XUDTTypeScript : TestnetInfo.XUDTTypeScript)
+export const getXudtDep = (isMainnet: boolean) => (isMainnet ? MainnetInfo.XUDTTypeDep : TestnetInfo.XUDTTypeDep)
 
-export const getSudtTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.SUDTTypeScript : TestnetInfo.SUDTTypeScript)
-export const getSudtDep = (isMainnet = false) => (isMainnet ? MainnetInfo.SUDTTypeDep : TestnetInfo.SUDTTypeDep)
+export const getSudtTypeScript = (isMainnet: boolean) => (isMainnet ? MainnetInfo.SUDTTypeScript : TestnetInfo.SUDTTypeScript)
+export const getSudtDep = (isMainnet: boolean) => (isMainnet ? MainnetInfo.SUDTTypeDep : TestnetInfo.SUDTTypeDep)
 
-export const getSporeTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.SporeTypeScript : TestnetInfo.SporeTypeScript)
-export const getSporeDep = (isMainnet = false) => (isMainnet ? MainnetInfo.SporeTypeDep : TestnetInfo.SporeTypeDep)
+export const getSporeTypeScript = (isMainnet: boolean) => (isMainnet ? MainnetInfo.SporeTypeScript : TestnetInfo.SporeTypeScript)
+export const getSporeDep = (isMainnet: boolean) => (isMainnet ? MainnetInfo.SporeTypeDep : TestnetInfo.SporeTypeDep)
 
-export const getMNftTypeScript = (isMainnet = false) => (isMainnet ? MainnetInfo.MNftTypeScript : TestnetInfo.MNftTypeScript)
-export const getMNftDep = (isMainnet = false) => (isMainnet ? MainnetInfo.MNftTypeDep : TestnetInfo.MNftTypeDep)
+export const getMNftTypeScript = (isMainnet: boolean) => (isMainnet ? MainnetInfo.MNftTypeScript : TestnetInfo.MNftTypeScript)
+export const getMNftDep = (isMainnet: boolean) => (isMainnet ? MainnetInfo.MNftTypeDep : TestnetInfo.MNftTypeDep)
