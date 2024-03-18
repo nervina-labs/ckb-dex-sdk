@@ -1,15 +1,5 @@
 import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
-import {
-  getCotaTypeScript,
-  getXudtDep,
-  getJoyIDCellDep,
-  getDexCellDep,
-  MAX_FEE,
-  JOYID_ESTIMATED_WITNESS_LOCK_SIZE,
-  CKB_UNIT,
-  getSudtDep,
-  getSporeDep,
-} from '../constants'
+import { getCotaTypeScript, getJoyIDCellDep, getDexCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE } from '../constants'
 import { CKBAsset, CancelParams, Hex, SubkeyUnlockReq, TakerResult } from '../types'
 import { append0x } from '../utils'
 import { AssetException, NoCotaCellException, NoLiveCellException } from '../exceptions'
@@ -78,31 +68,16 @@ export const buildCancelTx = async ({
   let changeCapacity = BigInt(0)
   let sporeCoBuild = '0x'
 
+  const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
+  const errMsg = `Insufficient CKB available balance to pay transaction fee`
+  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(emptyCells, minCellCapacity, txFee, BigInt(0), errMsg)
+  inputs = [...orderInputs, ...emptyInputs]
+
   if (isUdtAsset(ckbAsset)) {
     const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, sellerLock)
-
     outputs = udtOutputs
     outputsData = udtOutputsData
-
-    const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
-    const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
-    const errMsg = `At least ${needCKB} free CKB (refundable) is required to cancel the sell order.`
-    const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
-      emptyCells,
-      minCellCapacity,
-      txFee,
-      minCellCapacity,
-      errMsg,
-    )
-    inputs = [...orderInputs, ...emptyInputs]
-
     changeCapacity = inputsCapacity + orderInputsCapacity - sumUdtCapacity - txFee
-    const changeOutput: CKBComponents.CellOutput = {
-      lock: sellerLock,
-      capacity: append0x(changeCapacity.toString(16)),
-    }
-    outputs.push(changeOutput)
-    outputsData.push('0x')
   } else {
     let sumNftCapacity = BigInt(0)
     for (const orderCell of orderCells) {
@@ -119,27 +94,14 @@ export const buildCancelTx = async ({
     if (ckbAsset === CKBAsset.SPORE) {
       sporeCoBuild = generateSporeCoBuild(orderCells, outputs)
     }
-
-    const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
-    const needCKB = ((minCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
-    const errMsg = `At least ${needCKB} free CKB (refundable) is required to cancel the sell order.`
-    const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
-      emptyCells,
-      minCellCapacity,
-      txFee,
-      minCellCapacity,
-      errMsg,
-    )
-    inputs = [...orderInputs, ...emptyInputs]
-
     changeCapacity = inputsCapacity + orderInputsCapacity - sumNftCapacity - txFee
-    const changeOutput: CKBComponents.CellOutput = {
-      lock: sellerLock,
-      capacity: append0x(changeCapacity.toString(16)),
-    }
-    outputs.push(changeOutput)
-    outputsData.push('0x')
   }
+  const changeOutput: CKBComponents.CellOutput = {
+    lock: sellerLock,
+    capacity: append0x(changeCapacity.toString(16)),
+  }
+  outputs.push(changeOutput)
+  outputsData.push('0x')
 
   cellDeps.push(getAssetCellDep(ckbAsset, isMainnet))
   if (joyID) {
