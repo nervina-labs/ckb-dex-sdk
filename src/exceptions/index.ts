@@ -45,3 +45,9 @@ export class OrderLockArgsException extends Error {
     super(message)
   }
 }
+
+export class NoSupportSUDTAssetException extends Error {
+  constructor(message: string) {
+    super(message)
+  }
+}
