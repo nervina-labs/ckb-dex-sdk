@@ -10,6 +10,7 @@ import { matchOrderOutputs } from './taker'
 import { Hex } from '../types'
 import { OrderArgs } from './orderArgs'
 import { serializeScript } from '@nervosnetwork/ckb-sdk-utils'
+import { calculateUDTMakerListPackage } from './maker'
 
 describe('dex test cases', () => {
   it('calculateUdtCellCapacity', async () => {
@@ -39,6 +40,21 @@ describe('dex test cases', () => {
       args: '0x06ec22c2def100bba3e295a1ff279c490d227151bf3166a4f3f008906c849399',
     }
     const capacity = calculateUdtCellCapacity(orderLock, xudtType)
+    expect(BigInt(215_0000_0000)).toBe(capacity)
+  })
+
+  it('calculateUDTMakerListPackage', async () => {
+    const joyIDLock: CKBComponents.Script = {
+      codeHash: '0xd23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac',
+      hashType: 'type',
+      args: '0x0001f21be6c96d2103946d37a1ee882011f7530a92a7',
+    }
+    const xudtType: CKBComponents.Script = {
+      codeHash: '0x25c29dc317811a6f6f3985a7a9ebc4838bd388d19d0feeecf0bcd60f6c0975bb',
+      hashType: 'type',
+      args: '0x06ec22c2def100bba3e295a1ff279c490d227151bf3166a4f3f008906c849399',
+    }
+    const capacity = calculateUDTMakerListPackage(joyIDLock, xudtType)
     expect(BigInt(215_0000_0000)).toBe(capacity)
   })
 

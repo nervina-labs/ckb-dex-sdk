@@ -1,4 +1,5 @@
 export * from './maker'
+export * from './batchMaker'
 export * from './taker'
 export * from './cancel'
 export { calculateUdtCellCapacity, calculateEmptyCellMinCapacity } from './helper'
