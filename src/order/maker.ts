@@ -30,7 +30,7 @@ export const calculateNFTMakerListPackage = (seller: string | CKBComponents.Scri
   return BigInt(orderArgsSize - sellerLockArgsSize) * CKB_UNIT
 }
 
-export const calculateUDTMakerListPackage = (seller: string | CKBComponents.Script, assetType: Hex | CKBComponents.Script): bigint => {
+export const calculateUDTMakerListPackage = (seller: string | CKBComponents.Script, assetType?: Hex | CKBComponents.Script): bigint => {
   const sellerLock = typeof seller === 'string' ? addressToScript(seller) : seller
 
   // The setup and totalValue are only used as a placeholder and does not affect the final size calculation.
@@ -42,9 +42,9 @@ export const calculateUDTMakerListPackage = (seller: string | CKBComponents.Scri
     ...getDexLockScript(false),
     args: orderArgs.toHex(),
   }
-  const assetTypeScript = typeof assetType === 'string' ? (blockchain.Script.unpack(assetType) as CKBComponents.Script) : assetType
+  const typeScript = typeof assetType === 'string' ? (blockchain.Script.unpack(assetType) as CKBComponents.Script) : assetType
 
-  return calculateUdtCellCapacity(orderLock, assetTypeScript)
+  return calculateUdtCellCapacity(orderLock, typeScript)
 }
 
 export const buildMakerTx = async ({
