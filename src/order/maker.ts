@@ -94,13 +94,6 @@ export const buildMakerTx = async ({
     }
     let { inputs: udtInputs, capacity: sumInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
 
-    outputs.push({
-      lock: orderLock,
-      type: assetTypeScript,
-      capacity: append0x(orderCellCapacity.toString(16)),
-    })
-    outputsData.push(append0x(u128ToLe(listAmount)))
-
     orderCellCapacity = calculateUdtCellCapacity(orderLock, assetTypeScript)
     const udtCellCapacity = calculateUdtCellCapacity(sellerLock, assetTypeScript)
     if (sumInputsCapacity < orderCellCapacity + udtCellCapacity + minCellCapacity + txFee) {
@@ -116,6 +109,13 @@ export const buildMakerTx = async ({
       inputs = [...emptyInputs, ...udtInputs]
       sumInputsCapacity += emptyInputsCapacity
     }
+
+    outputs.push({
+      lock: orderLock,
+      type: assetTypeScript,
+      capacity: append0x(orderCellCapacity.toString(16)),
+    })
+    outputsData.push(append0x(u128ToLe(listAmount)))
 
     changeCapacity = sumInputsCapacity - orderCellCapacity - txFee
     if (inputsAmount > listAmount) {
