@@ -92,22 +92,7 @@ export const buildMakerTx = async ({
     if (!udtCells || udtCells.length === 0) {
       throw new AssetException('The address has no UDT cells')
     }
-    const { inputs: udtInputs, capacity: udtInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
-
-    orderCellCapacity = calculateUdtCellCapacity(orderLock, assetTypeScript)
-    const orderNeedCapacity = orderCellCapacity - udtInputsCapacity
-
-    const needCKB = ((orderNeedCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
-    const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
-    const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
-      emptyCells,
-      orderNeedCapacity,
-      txFee,
-      minCellCapacity,
-      errMsg,
-    )
-
-    inputs = [...emptyInputs, ...udtInputs]
+    let { inputs: udtInputs, capacity: sumInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
 
     outputs.push({
       lock: orderLock,
@@ -116,9 +101,24 @@ export const buildMakerTx = async ({
     })
     outputsData.push(append0x(u128ToLe(listAmount)))
 
-    changeCapacity = emptyInputsCapacity - orderNeedCapacity - txFee
+    orderCellCapacity = calculateUdtCellCapacity(orderLock, assetTypeScript)
+    const udtCellCapacity = calculateUdtCellCapacity(sellerLock, assetTypeScript)
+    if (sumInputsCapacity < orderCellCapacity + udtCellCapacity + minCellCapacity + txFee) {
+      const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+      const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
+      const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
+        emptyCells,
+        orderCellCapacity,
+        txFee,
+        minCellCapacity,
+        errMsg,
+      )
+      inputs = [...emptyInputs, ...udtInputs]
+      sumInputsCapacity += emptyInputsCapacity
+    }
+
+    changeCapacity = sumInputsCapacity - orderCellCapacity - txFee
     if (inputsAmount > listAmount) {
-      const udtCellCapacity = calculateUdtCellCapacity(sellerLock, assetTypeScript)
       changeCapacity -= udtCellCapacity
       outputs.push({
         lock: sellerLock,
@@ -143,7 +143,7 @@ export const buildMakerTx = async ({
     const nftCell = nftCells[0]
     orderCellCapacity = calculateNFTCellCapacity(orderLock, nftCell)
     const nftInputCapacity = BigInt(nftCell.output.capacity)
-    const orderNeedCapacity = orderCellCapacity - nftInputCapacity
+    const orderNeedCapacity = orderCellCapacity > nftInputCapacity ? orderCellCapacity - nftInputCapacity : BigInt(0)
 
     const needCKB = ((orderNeedCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
