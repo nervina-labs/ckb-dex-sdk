@@ -43,13 +43,7 @@ export const calculateTransactionFee = (txSize: number): bigint => {
 }
 
 export const deserializeOutPoints = (outPointHexList: Hex[]) => {
-  const outPoints = outPointHexList.map(outPoint => {
-    const op = blockchain.OutPoint.unpack(outPoint)
-    return {
-      txHash: op.txHash,
-      index: append0x(op.index.toString(16)),
-    } as CKBComponents.OutPoint
-  })
+  const outPoints = outPointHexList.map(outPoint => blockchain.OutPoint.unpack(outPoint))
   return outPoints
 }
 
