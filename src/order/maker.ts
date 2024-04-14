@@ -108,7 +108,7 @@ export const buildMakerTx = async ({
       )
       inputs = [...emptyInputs, ...udtInputs]
       sumInputsCapacity += emptyInputsCapacity
-    }else{
+    } else {
       inputs = udtInputs
     }
 
