@@ -47,7 +47,7 @@ export const deserializeOutPoints = (outPointHexList: Hex[]) => {
     const op = blockchain.OutPoint.unpack(outPoint)
     return {
       txHash: op.txHash,
-      index: append0x(op.index.toString(16)),
+      index: op.index,
     } as CKBComponents.OutPoint
   })
   return outPoints
