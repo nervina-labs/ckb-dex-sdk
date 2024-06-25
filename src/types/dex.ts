@@ -11,6 +11,7 @@ export interface JoyIDConfig {
 export enum CKBAsset {
   XUDT,
   SUDT,
+  CCBTC,
   SPORE,
   MNFT,
 }
