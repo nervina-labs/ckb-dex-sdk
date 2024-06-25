@@ -82,7 +82,7 @@ export const cleanUpUdtOutputs = (orderCells: CKBComponents.LiveCell[], lock: CK
 }
 
 export const isUdtAsset = (asset: CKBAsset) => {
-  return asset === CKBAsset.XUDT || asset === CKBAsset.SUDT || asset === CKBAsset.CCBTC
+  return asset === CKBAsset.XUDT || asset === CKBAsset.SUDT || asset === CKBAsset.XUDT_CC
 }
 
 export const generateSporeCoBuild = (
@@ -120,7 +120,7 @@ export const getAssetCellDep = (asset: CKBAsset, isMainnet: boolean) => {
       return getSporeDep(isMainnet)
     case CKBAsset.MNFT:
       return getMNftDep(isMainnet)
-    case CKBAsset.CCBTC:
+    case CKBAsset.XUDT_CC:
       return getCCBTCDep(isMainnet)
     default:
       return getXudtDep(isMainnet)
