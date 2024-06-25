@@ -37,6 +37,7 @@ You must set the asset type(CKBAsset) when calling `buildXXXTx` methods and the 
 export enum CKBAsset {
   XUDT,
   SUDT,
+  CCBTC,
   SPORE,
   MNFT,
 }

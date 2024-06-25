@@ -29,6 +29,8 @@ const maker = async () => {
     pubkey: '',
     keyType: 'main_key',
     alg: -7,
+    taproot: { address: '', pubkey: '' },
+    nativeSegwit: { address: '', pubkey: '' },
   }
   // The JoyIDConfig is needed if the dapps use JoyID Wallet to connect and sign ckb transaction
   const joyID: JoyIDConfig = {
