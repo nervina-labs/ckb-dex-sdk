@@ -7,7 +7,7 @@ CKB DEX SDK is a comprehensive web development kit, which helps developers inter
 
 The SDK provides methods for making orders, taking orders, and canceling orders. Developers can use common lock scripts, such as official secp256k1/blake160 lock, JoyID lock, etc., to interact with the CKB DEX contract.
 
-You can use the DEX to swap fungible tokens([SUDT](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0025-simple-udt/0025-simple-udt.md), [XUDT](https://talk.nervos.org/t/rfc-extensible-udt/5337), etc.) and non-fungible tokens([Spore](https://docs.spore.pro/), [mNFT](https://talk.nervos.org/t/rfc-multi-purpose-nft-draft-spec/5434), [ccBTC](https://www.crosschain.network/assets?token=ccbtc), etc.) with CKB native asset and JoyID lock is recommended to hold and swap CKB assets.
+You can use the DEX to swap fungible tokens([SUDT](https://github.com/nervosnetwork/rfcs/blob/master/rfcs/0025-simple-udt/0025-simple-udt.md), [XUDT](https://talk.nervos.org/t/rfc-extensible-udt/5337), [ccBTC](https://www.crosschain.network/assets?token=ccbtc), etc.) and non-fungible tokens([Spore](https://docs.spore.pro/), [mNFT](https://talk.nervos.org/t/rfc-multi-purpose-nft-draft-spec/5434), etc.) with CKB native asset and JoyID lock is recommended to hold and swap CKB assets.
 
 You can build the maker transactions to transfer FT or NFT assets to DEX lock script whose args contains owner address, price(based on CKB native asset), setup, etc. Anyone can build a taker transaction, as long as the price required in the DEX lock args is met. You can cancel the maker transactions at any time before the taker transactions are executed.
 
