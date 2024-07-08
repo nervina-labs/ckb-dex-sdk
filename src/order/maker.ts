@@ -1,6 +1,14 @@
 import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
 import { blockchain } from '@ckb-lumos/base'
-import { getDexLockScript, getCotaTypeScript, getJoyIDCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE, CKB_UNIT } from '../constants'
+import {
+  getDexLockScript,
+  getCotaTypeScript,
+  getJoyIDCellDep,
+  MAX_FEE,
+  JOYID_ESTIMATED_WITNESS_SIZE,
+  CKB_UNIT,
+  DEFAULT_ESTIMATED_WITNESS_SIZE,
+} from '../constants'
 import { Hex, SubkeyUnlockReq, MakerParams, MakerResult, CKBAsset } from '../types'
 import { append0x, remove0x, u128ToLe } from '../utils'
 import { AssetException, NoCotaCellException, NoLiveCellException, NFTException } from '../exceptions'
@@ -55,6 +63,7 @@ export const buildMakerTx = async ({
   totalValue,
   assetType,
   fee,
+  estimateWitnessSize,
   ckbAsset = CKBAsset.XUDT,
 }: MakerParams): Promise<MakerResult> => {
   let txFee = fee ?? MAX_FEE
@@ -229,7 +238,7 @@ export const buildMakerTx = async ({
   }
 
   if (txFee === MAX_FEE) {
-    const txSize = getTransactionSize(tx) + (joyID ? JOYID_ESTIMATED_WITNESS_LOCK_SIZE : 0)
+    const txSize = getTransactionSize(tx) + (joyID ? JOYID_ESTIMATED_WITNESS_SIZE : estimateWitnessSize ?? DEFAULT_ESTIMATED_WITNESS_SIZE)
     const estimatedTxFee = calculateTransactionFee(txSize)
     txFee = estimatedTxFee
     const estimatedChangeCapacity = changeCapacity + (MAX_FEE - estimatedTxFee)

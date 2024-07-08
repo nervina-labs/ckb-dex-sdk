@@ -1,5 +1,13 @@
 import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
-import { getCotaTypeScript, getJoyIDCellDep, getDexCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE, CKB_UNIT } from '../constants'
+import {
+  getCotaTypeScript,
+  getJoyIDCellDep,
+  getDexCellDep,
+  MAX_FEE,
+  JOYID_ESTIMATED_WITNESS_SIZE,
+  CKB_UNIT,
+  DEFAULT_ESTIMATED_WITNESS_SIZE,
+} from '../constants'
 import { CKBAsset, Hex, SubkeyUnlockReq, TakerParams, TakerResult } from '../types'
 import { append0x } from '../utils'
 import { AssetException, NoCotaCellException, NoLiveCellException } from '../exceptions'
@@ -76,6 +84,7 @@ export const buildTakerTx = async ({
   buyer,
   orderOutPoints,
   fee,
+  estimateWitnessSize,
   ckbAsset = CKBAsset.XUDT,
 }: TakerParams): Promise<TakerResult> => {
   let txFee = fee ?? MAX_FEE
@@ -226,7 +235,7 @@ export const buildTakerTx = async ({
   }
 
   if (txFee === MAX_FEE) {
-    const txSize = getTransactionSize(tx) + (joyID ? JOYID_ESTIMATED_WITNESS_LOCK_SIZE : 0)
+    const txSize = getTransactionSize(tx) + (joyID ? JOYID_ESTIMATED_WITNESS_SIZE : estimateWitnessSize ?? DEFAULT_ESTIMATED_WITNESS_SIZE)
     const estimatedTxFee = calculateTransactionFee(txSize)
     txFee = estimatedTxFee
     const estimatedChangeCapacity = changeCapacity + (MAX_FEE - estimatedTxFee)
