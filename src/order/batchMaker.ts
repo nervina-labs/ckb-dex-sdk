@@ -1,6 +1,14 @@
 import { addressToScript, blake160, getTransactionSize, serializeScript, serializeWitnessArgs } from '@nervosnetwork/ckb-sdk-utils'
 import { blockchain } from '@ckb-lumos/base'
-import { getDexLockScript, getCotaTypeScript, getJoyIDCellDep, MAX_FEE, JOYID_ESTIMATED_WITNESS_LOCK_SIZE, CKB_UNIT } from '../constants'
+import {
+  getDexLockScript,
+  getCotaTypeScript,
+  getJoyIDCellDep,
+  MAX_FEE,
+  JOYID_ESTIMATED_WITNESS_SIZE,
+  CKB_UNIT,
+  DEFAULT_ESTIMATED_WITNESS_SIZE,
+} from '../constants'
 import { Hex, SubkeyUnlockReq, MakerParams, CKBAsset } from '../types'
 import { append0x } from '../utils'
 import { NoCotaCellException, NoLiveCellException, NFTException, NoSupportUDTAssetException } from '../exceptions'
@@ -17,7 +25,7 @@ import { OrderArgs } from './orderArgs'
 import { calculateNFTMakerListPackage } from './maker'
 
 export const buildMultiNftsMakerTx = async (
-  { collector, joyID, seller, fee, ckbAsset = CKBAsset.SPORE }: MakerParams,
+  { collector, joyID, seller, fee, estimateWitnessSize, ckbAsset = CKBAsset.SPORE }: MakerParams,
   nfts: { totalValue: bigint; assetType: string }[],
 ) => {
   let txFee = fee ?? MAX_FEE
@@ -172,7 +180,7 @@ export const buildMultiNftsMakerTx = async (
   }
 
   if (txFee === MAX_FEE) {
-    const txSize = getTransactionSize(tx) + (joyID ? JOYID_ESTIMATED_WITNESS_LOCK_SIZE : 0)
+    const txSize = getTransactionSize(tx) + (joyID ? JOYID_ESTIMATED_WITNESS_SIZE : estimateWitnessSize ?? DEFAULT_ESTIMATED_WITNESS_SIZE)
     const estimatedTxFee = calculateTransactionFee(txSize)
     txFee = estimatedTxFee
     const estimatedChangeCapacity = changeCapacity + (MAX_FEE - estimatedTxFee)

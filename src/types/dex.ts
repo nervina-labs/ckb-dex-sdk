@@ -21,6 +21,7 @@ interface BaseParams {
   fee?: bigint
   joyID?: JoyIDConfig
   ckbAsset?: CKBAsset
+  estimateWitnessSize?: number
 }
 
 export interface MakerParams extends BaseParams {
