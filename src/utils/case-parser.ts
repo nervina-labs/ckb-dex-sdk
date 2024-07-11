@@ -4,8 +4,8 @@ import { toSnake } from 'convert-keys'
 export const toCamelcase = (obj: any) => {
   try {
     return camelcaseKeys(obj, {
-          deep: true,
-        })
+      deep: true,
+    })
   } catch (error) {
     console.error(error)
   }
