@@ -62,7 +62,7 @@ export const matchNftOrderCells = (orderCells: CKBComponents.LiveCell[], buyerLo
     dexOutputs.push(output)
     dexOutputsData.push('0x')
 
-    makerNetworkFee += calculateNFTMakerListPackage(orderArgs.ownerLock)
+    makerNetworkFee += calculateNFTMakerListPackage(orderArgs.ownerLock, buyerLock)
 
     const buyerNftCapacity = calculateNFTCellCapacity(buyerLock, orderCell)
     buyerOutputs.push({
@@ -176,6 +176,7 @@ export const buildTakerTx = async ({
     }
 
     changeCapacity = inputsCapacity + makerNetworkFee - dexOutputsCapacity - txFee
+
     const changeOutput: CKBComponents.CellOutput = {
       lock: buyerLock,
       capacity: append0x(changeCapacity.toString(16)),

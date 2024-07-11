@@ -25,9 +25,9 @@ import { CKBTransaction } from '@joyid/ckb'
 import { OrderArgs } from './orderArgs'
 
 // The difference between the capacity occupied by the owner lock and the seller lock and the result may be negative
-export const calculateNFTMakerListPackage = (seller: string | CKBComponents.Script): bigint => {
+export const calculateNFTMakerListPackage = (seller: string | CKBComponents.Script, buyer?: CKBComponents.Script): bigint => {
   const sellerLock = typeof seller === 'string' ? addressToScript(seller) : seller
-  const sellerLockArgsSize = remove0x(sellerLock.args).length / 2
+  const buyerLockArgsSize = remove0x(buyer?.args ?? sellerLock.args).length / 2
 
   // The setup and totalValue are only used as a placeholder and does not affect the final size calculation.
   const setup = 4
@@ -35,7 +35,7 @@ export const calculateNFTMakerListPackage = (seller: string | CKBComponents.Scri
   const orderArgs = new OrderArgs(sellerLock, setup, totalValue)
   const orderArgsSize = remove0x(orderArgs.toHex()).length / 2
 
-  return BigInt(orderArgsSize - sellerLockArgsSize) * CKB_UNIT
+  return BigInt(orderArgsSize - buyerLockArgsSize) * CKB_UNIT
 }
 
 export const calculateUDTMakerListPackage = (seller: string | CKBComponents.Script, assetType?: Hex | CKBComponents.Script): bigint => {
