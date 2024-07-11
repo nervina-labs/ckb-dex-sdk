@@ -1,26 +1,22 @@
 import camelcaseKeys from 'camelcase-keys'
 import { toSnake } from 'convert-keys'
 
-export const toCamelcase = (object: any) => {
+export const toCamelcase = (obj: any) => {
   try {
-    return JSON.parse(
-      JSON.stringify(
-        camelcaseKeys(object, {
+    return camelcaseKeys(obj, {
           deep: true,
-        }),
-      ),
-    )
+        })
   } catch (error) {
     console.error(error)
   }
-  return null
+  return undefined
 }
 
-export const toSnakeCase = (object: any) => {
+export const toSnakeCase = (obj: any) => {
   try {
-    return JSON.parse(JSON.stringify(toSnake(object)))
+    return toSnake(obj)
   } catch (error) {
     console.error(error)
   }
-  return null
+  return undefined
 }
