@@ -31,6 +31,8 @@ export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
 
   for (const orderCell of orderCells) {
     const orderArgs = OrderArgs.fromHex(orderCell.output.lock.args)
+    // The UDT price DOES NOT include list package fee, so the output cell capacity of the seller in the taker transaction includes
+    // the UDT price and the capacity of the UDT DEX input capacity
     const paySellerCapacity = orderArgs.totalValue + BigInt(append0x(orderCell.output.capacity))
     sumSellerCapacity += paySellerCapacity
     const output: CKBComponents.CellOutput = {
@@ -54,6 +56,7 @@ export const matchNftOrderCells = (orderCells: CKBComponents.LiveCell[], buyerLo
   for (const orderCell of orderCells) {
     const orderArgs = OrderArgs.fromHex(orderCell.output.lock.args)
     const sellerLock = orderArgs.ownerLock
+    // The NFT price includes list package fee, so the output cell capacity of the seller in the taker transaction is same as the NFT price
     dexSellerOutputsCapacity += orderArgs.totalValue
     const output: CKBComponents.CellOutput = {
       lock: sellerLock,
