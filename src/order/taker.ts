@@ -23,7 +23,6 @@ import {
 } from './helper'
 import { OrderArgs } from './orderArgs'
 import { CKBTransaction } from '@joyid/ckb'
-import { calculateNFTMakerListPackage } from './maker'
 
 export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
   const sellerOutputs: CKBComponents.CellOutput[] = []
@@ -32,11 +31,11 @@ export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
 
   for (const orderCell of orderCells) {
     const orderArgs = OrderArgs.fromHex(orderCell.output.lock.args)
-    sumSellerCapacity += orderArgs.totalValue
-    const payCapacity = orderArgs.totalValue + BigInt(append0x(orderCell.output.capacity))
+    const paySellerCapacity = orderArgs.totalValue + BigInt(append0x(orderCell.output.capacity))
+    sumSellerCapacity += paySellerCapacity
     const output: CKBComponents.CellOutput = {
       lock: orderArgs.ownerLock,
-      capacity: append0x(payCapacity.toString(16)),
+      capacity: append0x(paySellerCapacity.toString(16)),
     }
     sellerOutputs.push(output)
     sellerOutputsData.push('0x')
@@ -47,24 +46,24 @@ export const matchOrderOutputs = (orderCells: CKBComponents.LiveCell[]) => {
 export const matchNftOrderCells = (orderCells: CKBComponents.LiveCell[], buyerLock: CKBComponents.Script) => {
   let dexOutputs: CKBComponents.CellOutput[] = []
   let dexOutputsData: Hex[] = []
-  let makerNetworkFee = BigInt(0)
-  let dexOutputsCapacity = BigInt(0)
+  let dexSellerOutputsCapacity = BigInt(0)
+  let dexSumOutputsCapacity = BigInt(0)
   const buyerOutputs: CKBComponents.CellOutput[] = []
   const buyerOutputsData: Hex[] = []
 
   for (const orderCell of orderCells) {
     const orderArgs = OrderArgs.fromHex(orderCell.output.lock.args)
-    dexOutputsCapacity += orderArgs.totalValue
+    const sellerLock = orderArgs.ownerLock
+    dexSellerOutputsCapacity += orderArgs.totalValue
     const output: CKBComponents.CellOutput = {
-      lock: orderArgs.ownerLock,
+      lock: sellerLock,
       capacity: append0x(orderArgs.totalValue.toString(16)),
     }
     dexOutputs.push(output)
     dexOutputsData.push('0x')
 
-    makerNetworkFee += calculateNFTMakerListPackage(orderArgs.ownerLock, buyerLock)
-
     const buyerNftCapacity = calculateNFTCellCapacity(buyerLock, orderCell)
+    dexSumOutputsCapacity += buyerNftCapacity
     buyerOutputs.push({
       lock: buyerLock,
       type: orderCell.output.type,
@@ -72,10 +71,11 @@ export const matchNftOrderCells = (orderCells: CKBComponents.LiveCell[], buyerLo
     })
     buyerOutputsData.push(orderCell.data?.content!)
   }
+  dexSumOutputsCapacity += dexSellerOutputsCapacity
   dexOutputs = dexOutputs.concat(buyerOutputs)
   dexOutputsData = dexOutputsData.concat(buyerOutputsData)
 
-  return { dexOutputs, dexOutputsData, makerNetworkFee, dexOutputsCapacity }
+  return { dexOutputs, dexOutputsData, dexSumOutputsCapacity, dexSellerOutputsCapacity }
 }
 
 export const buildTakerTx = async ({
@@ -101,6 +101,8 @@ export const buildTakerTx = async ({
   // Deserialize outPointHex array to outPoint array
   const outPoints = deserializeOutPoints(orderOutPoints)
 
+  let dexInputsCapacity = BigInt(0)
+
   // Fetch udt order cells with outPoints
   const orderCells: CKBComponents.LiveCell[] = []
   for await (const outPoint of outPoints) {
@@ -111,6 +113,7 @@ export const buildTakerTx = async ({
     if (!cell.output.type || !cell.data) {
       throw new AssetException('The udt cell specified by the out point must have type script')
     }
+    dexInputsCapacity += BigInt(cell.output.capacity)
     orderCells.push(cell)
   }
   const orderInputs: CKBComponents.CellInput[] = outPoints.map(outPoint => ({
@@ -127,25 +130,27 @@ export const buildTakerTx = async ({
 
   if (isUdtAsset(ckbAsset)) {
     const { sellerOutputs, sellerOutputsData, sumSellerCapacity } = matchOrderOutputs(orderCells)
-    const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, buyerLock)
+    const { buyerUdtOutputs, buyerUdtOutputsData, buyerUdtOutputsCapacity } = cleanUpUdtOutputs(orderCells, buyerLock)
 
-    const needInputsCapacity = sumSellerCapacity + sumUdtCapacity
-    outputs = [...sellerOutputs, ...udtOutputs]
-    outputsData = [...sellerOutputsData, ...udtOutputsData]
+    // The needExtraInputsCapacity doesn't include dex inputs capacity
+    const needExtraInputsCapacity = sumSellerCapacity + buyerUdtOutputsCapacity - dexInputsCapacity
+    outputs = [...sellerOutputs, ...buyerUdtOutputs]
+    outputsData = [...sellerOutputsData, ...buyerUdtOutputsData]
 
     const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
-    const needCKB = ((needInputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const needCKB = ((needExtraInputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB is required to take the order.`
     const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
       emptyCells,
-      needInputsCapacity,
+      needExtraInputsCapacity,
       txFee,
       minCellCapacity,
       errMsg,
     )
     inputs = [...orderInputs, ...emptyInputs]
 
-    changeCapacity = inputsCapacity - needInputsCapacity - txFee
+    changeCapacity = inputsCapacity - needExtraInputsCapacity - txFee
+
     const changeOutput: CKBComponents.CellOutput = {
       lock: buyerLock,
       capacity: append0x(changeCapacity.toString(16)),
@@ -153,29 +158,29 @@ export const buildTakerTx = async ({
     outputs.push(changeOutput)
     outputsData.push('0x')
   } else {
-    const { dexOutputs, dexOutputsData, makerNetworkFee, dexOutputsCapacity } = matchNftOrderCells(orderCells, buyerLock)
-
+    const { dexOutputs, dexOutputsData, dexSumOutputsCapacity, dexSellerOutputsCapacity } = matchNftOrderCells(orderCells, buyerLock)
     outputs = dexOutputs
     outputsData = dexOutputsData
 
     const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
-    const needCKB = ((dexOutputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
+    const needCKB = ((dexSellerOutputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB is required to take the order.`
-    const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
+    const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
       emptyCells,
-      dexOutputsCapacity,
+      dexSellerOutputsCapacity,
       txFee,
       minCellCapacity,
       errMsg,
     )
     inputs = [...orderInputs, ...emptyInputs]
+    const sumInputsCapacity = dexInputsCapacity + emptyInputsCapacity
 
     if (ckbAsset === CKBAsset.SPORE) {
       const sporeOutputs = dexOutputs.slice(orderCells.length)
       sporeCoBuild = generateSporeCoBuild(orderCells, sporeOutputs)
     }
 
-    changeCapacity = inputsCapacity + makerNetworkFee - dexOutputsCapacity - txFee
+    changeCapacity = sumInputsCapacity - dexSumOutputsCapacity - txFee
 
     const changeOutput: CKBComponents.CellOutput = {
       lock: buyerLock,
