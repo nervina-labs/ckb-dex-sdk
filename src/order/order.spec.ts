@@ -193,7 +193,7 @@ describe('dex test cases', () => {
       hashType: 'type',
       args: '0x00010748fce626e566ab4dbd1c95498bf10518443fc1',
     }
-    const { buyerUdtOutputs, buyerUdtOutputsData, buyerUdtOutputsCapacity } = cleanUpUdtOutputs(orderCells, joyIDLock)
+    const { udtOutputs, udtOutputsData, sumUdtCapacity } = cleanUpUdtOutputs(orderCells, joyIDLock)
 
     const expectedOutputs = [
       {
@@ -242,9 +242,9 @@ describe('dex test cases', () => {
       '0x00e87648170000000000000000000000',
     ]
     const expectedCapacity = BigInt(435_0000_0000)
-    expect(JSON.stringify(expectedOutputs)).toBe(JSON.stringify(buyerUdtOutputs))
-    expect(JSON.stringify(expectedOutputsData)).toBe(JSON.stringify(buyerUdtOutputsData))
-    expect(expectedCapacity).toBe(buyerUdtOutputsCapacity)
+    expect(JSON.stringify(expectedOutputs)).toBe(JSON.stringify(udtOutputs))
+    expect(JSON.stringify(expectedOutputsData)).toBe(JSON.stringify(udtOutputsData))
+    expect(expectedCapacity).toBe(sumUdtCapacity)
   })
 
   it('matchOrderOutputs', async () => {

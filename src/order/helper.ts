@@ -53,32 +53,32 @@ export const deserializeOutPoints = (outPointHexList: Hex[]) => {
   return outPoints
 }
 
-export const cleanUpUdtOutputs = (orderCells: CKBComponents.LiveCell[], buyerLock: CKBComponents.Script) => {
+export const cleanUpUdtOutputs = (orderCells: CKBComponents.LiveCell[], lock: CKBComponents.Script) => {
   const orderUdtTypeHexSet = new Set(orderCells.map(cell => serializeScript(cell.output.type!)))
   const orderUdtTypes: CKBComponents.Script[] = []
   for (const orderUdtTypeHex of orderUdtTypeHexSet) {
     orderUdtTypes.push(blockchain.Script.unpack(orderUdtTypeHex) as CKBComponents.Script)
   }
 
-  const buyerUdtOutputs: CKBComponents.CellOutput[] = []
-  const buyerUdtOutputsData: Hex[] = []
-  let buyerUdtOutputsCapacity = BigInt(0)
+  const udtOutputs: CKBComponents.CellOutput[] = []
+  const udtOutputsData: Hex[] = []
+  let sumUdtCapacity = BigInt(0)
 
   for (const orderUdtType of orderUdtTypes) {
-    buyerUdtOutputsCapacity += calculateUdtCellCapacity(buyerLock, orderUdtType!)
-    buyerUdtOutputs.push({
-      lock: buyerLock,
+    sumUdtCapacity += calculateUdtCellCapacity(lock, orderUdtType!)
+    udtOutputs.push({
+      lock: lock,
       type: orderUdtType,
-      capacity: append0x(calculateUdtCellCapacity(buyerLock, orderUdtType!).toString(16)),
+      capacity: append0x(calculateUdtCellCapacity(lock, orderUdtType!).toString(16)),
     })
     const udtAmount = orderCells
       .filter(cell => serializeScript(cell.output.type!) === serializeScript(orderUdtType))
       .map(cell => leToU128(cell.data?.content!))
       .reduce((prev, current) => prev + current, BigInt(0))
-    buyerUdtOutputsData.push(append0x(u128ToLe(udtAmount)))
+    udtOutputsData.push(append0x(u128ToLe(udtAmount)))
   }
 
-  return { buyerUdtOutputs, buyerUdtOutputsData, buyerUdtOutputsCapacity }
+  return { udtOutputs, udtOutputsData, sumUdtCapacity }
 }
 
 export const isUdtAsset = (asset: CKBAsset) => {

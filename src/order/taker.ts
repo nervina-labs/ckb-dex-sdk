@@ -133,7 +133,11 @@ export const buildTakerTx = async ({
 
   if (isUdtAsset(ckbAsset)) {
     const { sellerOutputs, sellerOutputsData, sumSellerCapacity } = matchOrderOutputs(orderCells)
-    const { buyerUdtOutputs, buyerUdtOutputsData, buyerUdtOutputsCapacity } = cleanUpUdtOutputs(orderCells, buyerLock)
+    const {
+      udtOutputs: buyerUdtOutputs,
+      udtOutputsData: buyerUdtOutputsData,
+      sumUdtCapacity: buyerUdtOutputsCapacity,
+    } = cleanUpUdtOutputs(orderCells, buyerLock)
 
     // The needExtraInputsCapacity doesn't include dex inputs capacity
     const needExtraInputsCapacity = sumSellerCapacity + buyerUdtOutputsCapacity - dexInputsCapacity
