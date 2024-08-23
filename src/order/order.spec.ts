@@ -293,7 +293,7 @@ describe('dex test cases', () => {
       },
     ]
     const expectedOutputsData: Hex[] = ['0x', '0x', '0x', '0x', '0x']
-    const expectedCapacity = BigInt(12500_0000_0000)
+    const expectedCapacity = BigInt(13225_0000_0000)
     expect(JSON.stringify(expectedOutputs)).toBe(JSON.stringify(sellerOutputs))
     expect(JSON.stringify(expectedOutputsData)).toBe(JSON.stringify(sellerOutputsData))
     expect(expectedCapacity).toBe(sumSellerCapacity)
