@@ -38,12 +38,12 @@ const maker = async () => {
     connectData,
   }
 
-  const listAmount = BigInt(500_0000_0000)
-  const totalValue = BigInt(800_0000_0000)
+  const listAmount = BigInt(200_0000_0000)
+  const totalValue = BigInt(500_0000_0000)
   const xudtType: CKBComponents.Script = {
     codeHash: '0x25c29dc317811a6f6f3985a7a9ebc4838bd388d19d0feeecf0bcd60f6c0975bb',
     hashType: 'type',
-    args: '0xaafd7e7eab79726c669d7565888b194dc06bd1dbec16749a721462151e4f1762',
+    args: '0x562e4e8a2f64a3e9c24beb4b7dd002d0ad3b842d0cc77924328e36ad114e3ebe',
   }
 
   const { rawTx, listPackage, txFee } = await buildMakerTx({
@@ -56,6 +56,8 @@ const maker = async () => {
     totalValue,
     assetType: append0x(serializeScript(xudtType)),
     ckbAsset: CKBAsset.XUDT,
+    // If you want to continually list xUDT without blockchain committed, excludePoolTx should be true
+    // excludePoolTx: true
   })
 
   const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
@@ -67,6 +69,28 @@ const maker = async () => {
 
   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
   console.info(`The udt asset has been listed with tx hash: ${txHash}`)
+
+  // You can list xUDT continually without blockchain committed when the transactions of the pool are excluded
+  // setTimeout(async () => {
+  //   const { rawTx, listPackage, txFee } = await buildMakerTx({
+  //     collector,
+  //     joyID,
+  //     seller,
+  //     // The UDT amount to list and it's optional for NFT asset
+  //     listAmount,
+  //     // The price whose unit is shannon for CKB native token
+  //     totalValue,
+  //     assetType: append0x(serializeScript(xudtType)),
+  //     ckbAsset: CKBAsset.XUDT,
+  //     excludePoolTx: true,
+  //   })
+
+  //   const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
+  //   const signedTx = signSecp256r1Tx(key, rawTx)
+
+  //   let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
+  //   console.info(`The udt asset has been continually listed with tx hash: ${txHash}`)
+  // }, 500)
 }
 
 maker()
