@@ -22,6 +22,7 @@ interface BaseParams {
   joyID?: JoyIDConfig
   ckbAsset?: CKBAsset
   estimateWitnessSize?: number
+  excludePoolTx?: boolean
 }
 
 export interface MakerParams extends BaseParams {

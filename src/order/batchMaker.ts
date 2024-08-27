@@ -85,13 +85,10 @@ export const buildMultiNftsMakerTx = async (
 
   const needCKB = ((orderNeedCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
   const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
-  const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
-    emptyCells,
-    orderNeedCapacity,
-    txFee,
+  const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(emptyCells, orderNeedCapacity, txFee, {
     minCellCapacity,
     errMsg,
-  )
+  })
   const nftInputList: CKBComponents.CellInput[] = []
   let sporeCoBuildNftCellList = []
   let sporeCoBuildOutputList = []
