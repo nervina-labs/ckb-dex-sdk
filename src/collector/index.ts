@@ -13,7 +13,7 @@ export interface CollectConfig {
   excludePoolTx?: boolean
 }
 
-const MAX_QUEUE_CAPACITY = 50
+const MAX_QUEUE_CAPACITY = 30
 
 export class Collector {
   private ckbNodeUrl: string
@@ -192,6 +192,9 @@ export class Collector {
   pushToQueue(outPoints: CKBComponents.OutPoint[]) {
     const serializedHexList = outPoints.map(serializeOutPoint)
     for (const serializedHex of serializedHexList) {
+      if (this.queue.includes(serializedHex)) {
+        continue
+      }
       if (this.queue.length >= MAX_QUEUE_CAPACITY) {
         this.queue.shift()
       }
@@ -202,6 +205,10 @@ export class Collector {
   isInQueue(outPoint: CKBComponents.OutPoint) {
     const serializedHex = serializeOutPoint(outPoint)
     return this.queue.includes(serializedHex)
+  }
+
+  getQueue() {
+    return this.queue
   }
 
   clearQueue() {

@@ -39,31 +39,56 @@ const cancel = async () => {
 
   const xudtOrderOutPoints: CKBComponents.OutPoint[] = [
     {
-      txHash: '0x835a283e8371c1e55db27e0e09bf468175b047268ca82609e74ef6ee9e81403c',
+      txHash: '0x81176763a95aa71d59be015c9769bf65302520ac11b6d668630071d841659b66',
       index: '0x0',
     },
-    {
-      txHash: '0x48d64acadc78709ac2de78c88ec3cd015c5d1cb02a0afa986d408b30e82a2eb6',
-      index: '0x0',
-    },
+    // {
+    //   txHash: '0x48d64acadc78709ac2de78c88ec3cd015c5d1cb02a0afa986d408b30e82a2eb6',
+    //   index: '0x0',
+    // },
   ]
+
+  console.log('Queue first state', collector.getQueue())
 
   const { rawTx, txFee, witnessIndex } = await buildCancelTx({
     collector,
     joyID,
     seller,
     orderOutPoints: xudtOrderOutPoints.map(serializeOutPoint),
+    excludePoolTx: true,
   })
 
-  const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
-  const signedTx = signSecp256r1Tx(key, rawTx, witnessIndex)
+  console.log('First', JSON.stringify(rawTx))
+  console.log('Queue second state', collector.getQueue())
 
-  // You can call the `signRawTransaction` method to sign the raw tx with JoyID wallet through @joyid/ckb SDK
-  // please make sure the seller address is the JoyID wallet ckb address
-  // const signedTx = await signRawTransaction(rawTx as CKBTransaction, seller)
+  // const key = keyFromP256Private(SELLER_MAIN_PRIVATE_KEY)
+  // const signedTx = signSecp256r1Tx(key, rawTx, witnessIndex)
 
-  let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
-  console.info(`The udt asset has been cancelled with tx hash: ${txHash}`)
+  // // You can call the `signRawTransaction` method to sign the raw tx with JoyID wallet through @joyid/ckb SDK
+  // // please make sure the seller address is the JoyID wallet ckb address
+  // // const signedTx = await signRawTransaction(rawTx as CKBTransaction, seller)
+
+  // let txHash = await collector.getCkb().rpc.sendTransaction(signedTx, 'passthrough')
+  // console.info(`The udt asset has been cancelled with tx hash: ${txHash}`)
+
+  setTimeout(async () => {
+    const xudtOrderOutPoints: CKBComponents.OutPoint[] = [
+      {
+        txHash: '0x6669bb0a0bdcdb2e3a467ec3379155872182fa6df4472fc113313008ec5e255c',
+        index: '0x0',
+      },
+    ]
+    const { rawTx, txFee, witnessIndex } = await buildCancelTx({
+      collector,
+      joyID,
+      seller,
+      orderOutPoints: xudtOrderOutPoints.map(serializeOutPoint),
+      excludePoolTx: true,
+    })
+
+    console.log('Second', JSON.stringify(rawTx))
+    console.log('Queue last state', collector.getQueue())
+  }, 500)
 }
 
 cancel()
