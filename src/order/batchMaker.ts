@@ -25,7 +25,7 @@ import { OrderArgs } from './orderArgs'
 import { calculateNFTMakerListPackage } from './maker'
 
 export const buildMultiNftsMakerTx = async (
-  { collector, joyID, seller, fee, estimateWitnessSize, ckbAsset = CKBAsset.SPORE }: MakerParams,
+  { collector, joyID, seller, fee, estimateWitnessSize, ckbAsset = CKBAsset.SPORE, excludePoolTx }: MakerParams,
   nfts: { totalValue: bigint; assetType: string }[],
 ) => {
   let txFee = fee ?? MAX_FEE
@@ -39,7 +39,7 @@ export const buildMultiNftsMakerTx = async (
     throw new NoLiveCellException('The address has no empty cells')
   }
   if (isUdtAsset(ckbAsset)) {
-    throw new NoSupportUDTAssetException('Just support nft asset')
+    throw new NoSupportUDTAssetException('Ony support NFT asset')
   }
 
   const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
@@ -53,9 +53,7 @@ export const buildMultiNftsMakerTx = async (
 
   let orderNeedCapacity = BigInt(0)
   let nftCellList = []
-  for (let i = 0; i < nfts.length; i++) {
-    const nft = nfts[i]
-
+  for (let nft of nfts) {
     const assetTypeScript = blockchain.Script.unpack(nft.assetType) as CKBComponents.Script
     const setup = isUdtAsset(ckbAsset) ? 0 : 4
     const orderArgs = new OrderArgs(sellerLock, setup, nft.totalValue)
@@ -85,20 +83,16 @@ export const buildMultiNftsMakerTx = async (
 
   const needCKB = ((orderNeedCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
   const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
-  const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
-    emptyCells,
-    orderNeedCapacity,
-    txFee,
+  const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(emptyCells, orderNeedCapacity, txFee, {
     minCellCapacity,
     errMsg,
-  )
+    excludePoolTx,
+  })
   const nftInputList: CKBComponents.CellInput[] = []
   let sporeCoBuildNftCellList = []
   let sporeCoBuildOutputList = []
   for (let i = 0; i < nftCellList.length; i++) {
-    const nftCell = nftCellList[i].nftCell
-    const orderLock = nftCellList[i].orderLock
-    const orderCellCapacity = nftCellList[i].orderCellCapacity
+    const { nftCell, orderLock, orderCellCapacity } = nftCellList[i]
 
     const nftInput: CKBComponents.CellInput = {
       previousOutput: nftCell.outPoint,

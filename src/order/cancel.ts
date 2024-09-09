@@ -31,6 +31,7 @@ export const buildCancelTx = async ({
   fee,
   estimateWitnessSize,
   ckbAsset = CKBAsset.XUDT,
+  excludePoolTx,
 }: CancelParams): Promise<TakerResult> => {
   let txFee = fee ?? MAX_FEE
   const isMainnet = seller.startsWith('ckb')
@@ -78,7 +79,11 @@ export const buildCancelTx = async ({
 
   const minCellCapacity = calculateEmptyCellMinCapacity(sellerLock)
   const errMsg = `Insufficient CKB available balance to pay transaction fee`
-  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(emptyCells, minCellCapacity, txFee, BigInt(0), errMsg)
+  const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(emptyCells, minCellCapacity, txFee, {
+    minCellCapacity: BigInt(0),
+    errMsg,
+    excludePoolTx,
+  })
   inputs = [...orderInputs, ...emptyInputs]
 
   if (isUdtAsset(ckbAsset)) {

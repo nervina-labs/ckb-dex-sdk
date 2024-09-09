@@ -1,7 +1,14 @@
-import { bytesToHex, hexToBytes, PERSONAL, rawTransactionToHash, serializeWitnessArgs, toUint64Le } from '@nervosnetwork/ckb-sdk-utils'
+import {
+  bytesToHex,
+  hexToBytes,
+  PERSONAL,
+  rawTransactionToHash,
+  serializeWitnessArgs,
+  toUint64Le,
+  blake2b,
+} from '@nervosnetwork/ckb-sdk-utils'
 import { ec as EC } from 'elliptic'
 import sha256 from 'fast-sha256'
-import blake2b from '@nervosnetwork/ckb-sdk-utils/lib/crypto/blake2b'
 import { append0x, getPublicKey, remove0x } from '../src/utils'
 import { Hex } from '../src/types'
 import { SECP256R1_PUBKEY_SIG_LEN, WITNESS_NATIVE_MODE } from '../src/constants'

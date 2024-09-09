@@ -89,6 +89,7 @@ export const buildTakerTx = async ({
   fee,
   estimateWitnessSize,
   ckbAsset = CKBAsset.XUDT,
+  excludePoolTx,
 }: TakerParams): Promise<TakerResult> => {
   let txFee = fee ?? MAX_FEE
   const isMainnet = buyer.startsWith('ckb')
@@ -147,13 +148,11 @@ export const buildTakerTx = async ({
     const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
     const needCKB = ((needExtraInputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB is required to take the order.`
-    const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(
-      emptyCells,
-      needExtraInputsCapacity,
-      txFee,
+    const { inputs: emptyInputs, capacity: inputsCapacity } = collector.collectInputs(emptyCells, needExtraInputsCapacity, txFee, {
       minCellCapacity,
       errMsg,
-    )
+      excludePoolTx,
+    })
     inputs = [...orderInputs, ...emptyInputs]
 
     changeCapacity = inputsCapacity - needExtraInputsCapacity - txFee
@@ -172,13 +171,11 @@ export const buildTakerTx = async ({
     const minCellCapacity = calculateEmptyCellMinCapacity(buyerLock)
     const needCKB = ((dexSellerOutputsCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB is required to take the order.`
-    const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
-      emptyCells,
-      dexSellerOutputsCapacity,
-      txFee,
+    const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(emptyCells, dexSellerOutputsCapacity, txFee, {
       minCellCapacity,
       errMsg,
-    )
+      excludePoolTx,
+    })
     inputs = [...orderInputs, ...emptyInputs]
     const sumInputsCapacity = dexInputsCapacity + emptyInputsCapacity
 

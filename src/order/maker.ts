@@ -65,6 +65,7 @@ export const buildMakerTx = async ({
   fee,
   estimateWitnessSize,
   ckbAsset = CKBAsset.XUDT,
+  excludePoolTx,
 }: MakerParams): Promise<MakerResult> => {
   let txFee = fee ?? MAX_FEE
   const isMainnet = seller.startsWith('ckb')
@@ -101,20 +102,22 @@ export const buildMakerTx = async ({
     if (!udtCells || udtCells.length === 0) {
       throw new AssetException('The address has no UDT cells')
     }
-    let { inputs: udtInputs, capacity: sumInputsCapacity, amount: inputsAmount } = collector.collectUdtInputs(udtCells, listAmount)
+    let {
+      inputs: udtInputs,
+      capacity: sumInputsCapacity,
+      amount: inputsAmount,
+    } = collector.collectUdtInputs(udtCells, listAmount, excludePoolTx)
 
     orderCellCapacity = calculateUdtCellCapacity(orderLock, assetTypeScript)
     const udtCellCapacity = calculateUdtCellCapacity(sellerLock, assetTypeScript)
     if (sumInputsCapacity < orderCellCapacity + udtCellCapacity + minCellCapacity + txFee) {
       const needCKB = ((orderCellCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
       const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
-      const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
-        emptyCells,
-        orderCellCapacity,
-        txFee,
+      const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(emptyCells, orderCellCapacity, txFee, {
         minCellCapacity,
         errMsg,
-      )
+        excludePoolTx,
+      })
       inputs = [...emptyInputs, ...udtInputs]
       sumInputsCapacity += emptyInputsCapacity
     } else {
@@ -158,13 +161,11 @@ export const buildMakerTx = async ({
 
     const needCKB = ((orderNeedCapacity + minCellCapacity + CKB_UNIT) / CKB_UNIT).toString()
     const errMsg = `At least ${needCKB} free CKB (refundable) is required to place a sell order.`
-    const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(
-      emptyCells,
-      orderNeedCapacity,
-      txFee,
+    const { inputs: emptyInputs, capacity: emptyInputsCapacity } = collector.collectInputs(emptyCells, orderNeedCapacity, txFee, {
       minCellCapacity,
       errMsg,
-    )
+      excludePoolTx,
+    })
     const nftInput: CKBComponents.CellInput = {
       previousOutput: nftCell.outPoint,
       since: '0x0',

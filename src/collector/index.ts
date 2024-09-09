@@ -5,10 +5,20 @@ import { IndexerCell, CollectResult, IndexerCapacity, CollectUdtResult as Collec
 import { MIN_CAPACITY } from '../constants'
 import { CapacityNotEnoughException, IndexerException, UdtAmountNotEnoughException } from '../exceptions'
 import { leToU128 } from '../utils'
+import { serializeOutPoint } from '@nervosnetwork/ckb-sdk-utils'
+
+export interface CollectConfig {
+  minCellCapacity?: bigint
+  errMsg?: string
+  excludePoolTx?: boolean
+}
+
+const MAX_QUEUE_CAPACITY = 30
 
 export class Collector {
   private ckbNodeUrl: string
   private ckbIndexerUrl: string
+  private queue: string[] = []
 
   constructor({ ckbNodeUrl, ckbIndexerUrl }: { ckbNodeUrl: string; ckbIndexerUrl: string }) {
     this.ckbNodeUrl = ckbNodeUrl
@@ -117,11 +127,14 @@ export class Collector {
     }
   }
 
-  collectInputs(liveCells: IndexerCell[], needCapacity: bigint, fee: bigint, minCapacity?: bigint, errMsg?: string): CollectResult {
-    const changeCapacity = minCapacity ?? MIN_CAPACITY
+  collectInputs(liveCells: IndexerCell[], needCapacity: bigint, fee: bigint, config?: CollectConfig): CollectResult {
+    const changeCapacity = config?.minCellCapacity ?? MIN_CAPACITY
     let inputs: CKBComponents.CellInput[] = []
     let sum = BigInt(0)
     for (let cell of liveCells) {
+      if (config?.excludePoolTx && this.isInQueue(cell.outPoint)) {
+        continue
+      }
       inputs.push({
         previousOutput: {
           txHash: cell.outPoint.txHash,
@@ -135,17 +148,21 @@ export class Collector {
       }
     }
     if (sum < needCapacity + changeCapacity + fee) {
-      const message = errMsg ?? 'Insufficient free CKB balance'
+      const message = config?.errMsg ?? 'Insufficient free CKB balance'
       throw new CapacityNotEnoughException(message)
     }
+    this.pushToQueue(inputs.map(input => input.previousOutput!))
     return { inputs, capacity: sum }
   }
 
-  collectUdtInputs(liveCells: IndexerCell[], needAmount: bigint): CollectUdtResult {
+  collectUdtInputs(liveCells: IndexerCell[], needAmount: bigint, excludePoolTx?: boolean): CollectUdtResult {
     let inputs: CKBComponents.CellInput[] = []
     let sumCapacity = BigInt(0)
     let sumAmount = BigInt(0)
     for (let cell of liveCells) {
+      if (excludePoolTx && this.isInQueue(cell.outPoint)) {
+        continue
+      }
       inputs.push({
         previousOutput: {
           txHash: cell.outPoint.txHash,
@@ -162,6 +179,7 @@ export class Collector {
     if (sumAmount < needAmount) {
       throw new UdtAmountNotEnoughException('Insufficient UDT balance')
     }
+    this.pushToQueue(inputs.map(input => input.previousOutput!))
     return { inputs, capacity: sumCapacity, amount: sumAmount }
   }
 
@@ -169,5 +187,31 @@ export class Collector {
     const ckb = new CKB(this.ckbNodeUrl)
     const { cell } = await ckb.rpc.getLiveCell(outPoint, true)
     return cell
+  }
+
+  pushToQueue(outPoints: CKBComponents.OutPoint[]) {
+    const serializedHexList = outPoints.map(serializeOutPoint)
+    for (const serializedHex of serializedHexList) {
+      if (this.queue.includes(serializedHex)) {
+        continue
+      }
+      if (this.queue.length >= MAX_QUEUE_CAPACITY) {
+        this.queue.shift()
+      }
+      this.queue.push(serializedHex)
+    }
+  }
+
+  isInQueue(outPoint: CKBComponents.OutPoint) {
+    const serializedHex = serializeOutPoint(outPoint)
+    return this.queue.includes(serializedHex)
+  }
+
+  getQueue() {
+    return this.queue
+  }
+
+  clearQueue() {
+    this.queue = []
   }
 }
